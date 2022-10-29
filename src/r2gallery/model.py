@@ -15,6 +15,7 @@ Photo_Notes_Limit = 512
 
 
 class SortBy(Enum):
+    """相册内的照片的排序方法"""
     CTime     = auto()
     CTimeDesc = auto()
     PTime     = auto()
@@ -22,11 +23,17 @@ class SortBy(Enum):
     List      = auto()  # 用列表指定顺序
 
 
+class Frontpage(Enum):
+    """图库首页的展示方式"""
+    Story  = auto()  # 展示图库简介,故事及相册列表
+    Single = auto()  # 只展示最新的一张照片
+    List   = auto()  # 只展示相册列表
+
+
 def now():
     return arrow.now().format(RFC3339)
 
 
-# 照片配置: id(filename,不包括相册名), url, 描述, 隐藏, 拍摄日期, 发布日期
 @dataclass
 class Photo:
     filename : str  # 文件名 (只能使用半角英数, 建议尽量简短)
@@ -37,6 +44,7 @@ class Photo:
     r2_url   : str  # 照片的 R2 地址 (自动获取)
     r2_html  : str  # 照片网页的 R2 地址 (自动获取)
     checksum : str  # sha1, 用来判断 notes/story 有无变更
+
 
 @dataclass
 class Album:
@@ -51,4 +59,15 @@ class Album:
     sort_by    : str   # 可选择 SortBy 里的五种排序方式
     photos     : list  # 照片文件名列表
     cover      : str   # 封面 (指定一个照片文件名)
+
+
+@dataclass
+class Gallery:
+    author    : str   # 图库作者 (必填)
+    notes     : str   # 图库简介 (纯文本格式, 第一行是图库标题)
+    story     : str   # 图库的故事 (Markdown 格式)
+    checksum  : str   # sha1, 用来判断 notes/story 有无变更
+    frontpage : str   # 可选择 Frontpage 里的三种展示方式
+    albums    : list  # 相册列表
+
 
