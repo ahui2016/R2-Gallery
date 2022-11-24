@@ -10,23 +10,21 @@ RFC3339 = "YYYY-MM-DD HH:mm:ssZZ"
 Filename_Forbid_Pattern = re.compile(r"[^._0-9a-zA-Z\-]")
 """文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)。"""
 
-Photo_Notes_Limit = 512
-"""一张照片的简介的简单描述的长度上限，单位: UTF8字符"""
+Short_Notes_Limit = 512
+"""简单描述的长度上限，单位: UTF8字符"""
 
 
 class SortBy(Enum):
-    """相册内的照片的排序方法"""
-    CTime     = auto()
-    CTimeDesc = auto()
-    PTime     = auto()
-    PTimeDesc = auto()
+    """相册内的图片的排序方法"""
+    CTime     = auto()  # 按图片拍摄或发布日期排序
+    CTimeDesc = auto()  # 按图片拍摄或发布日期排序(倒序)
     List      = auto()  # 用列表指定顺序
 
 
 class Frontpage(Enum):
     """图库首页的展示方式"""
-    Story  = auto()  # 展示图库简介,故事及相册列表
-    Single = auto()  # 只展示最新的一张照片
+    Story  = auto()  # 展示图库简介, 故事及相册列表
+    Single = auto()  # 只展示最新的一张图片
     List   = auto()  # 只展示相册列表
 
 
@@ -35,14 +33,13 @@ def now():
 
 
 @dataclass
-class Photo:
+class Picture:
     filename : str  # 文件名 (只能使用半角英数, 建议尽量简短)
     notes    : str  # 简单描述 (纯文本格式, 第一行是图片标题)
-    story    : str  # 照片的故事 (Markdown 格式)
-    ctime    : str  # 拍摄日期
-    ptime    : str  # 发布日期
-    r2_url   : str  # 照片的 R2 地址 (自动获取)
-    r2_html  : str  # 照片网页的 R2 地址 (自动获取)
+    story    : str  # 图片的故事 (Markdown 格式)
+    ctime    : str  # 拍摄或发布日期
+    r2_url   : str  # 图片的 R2 地址 (自动获取)
+    r2_html  : str  # 图片网页的 R2 地址 (自动获取)
     checksum : str  # sha1, 用来判断 notes/story 有无变更
 
 
@@ -53,12 +50,12 @@ class Album:
     notes      : str   # 相册简介 (纯文本格式, 第一行是相册标题)
     story      : str   # 相册的故事 (Markdown 格式)
     ctime      : str   # 相册创建时间
-    utime      : str   # 相册更新时间 (比如添加照片, 就会更新该时间)
+    utime      : str   # 相册更新时间 (比如添加图片, 就会更新该时间)
     r2_html    : str   # 相册网页的 R2 地址 (自动获取)
     checksum   : str   # sha1, 用来判断 notes/story 有无变更
     sort_by    : str   # 可选择 SortBy 里的五种排序方式
-    photos     : list  # 照片文件名列表
-    cover      : str   # 封面 (指定一个照片文件名)
+    pictures     : list  # 图片文件名列表
+    cover      : str   # 封面 (指定一个图片文件名)
 
 
 @dataclass
