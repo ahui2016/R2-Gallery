@@ -2,6 +2,20 @@
 
 个人独立相册，其中图片储存采用 Cloudflare R2 实现。
 
+## 关于 Cloudflare R2
+
+Cloudflare R2 是一种云储存服务, 本软件用它来储存图片.
+
+- 官方网址 <https://developers.cloudflare.com/r2/platform/pricing/>
+- 方便编程, 注册与设置也简单, 正因为如此, 我才能作出这个软件
+- 储存在 R2 里的文件, 可以公开访问 (因此才能用来做相册)
+- 有一定免费额度, 最重要的的是, 流量免费
+- 内含 10GB 免费容量, 流量免费, 注册时需要信用卡或 PayPal  
+  (注意: 上传下载等的操作次数超过上限也会产生费用,
+   详情以 Cloudflare 官方说明为准).
+
+由于本软件采用了 Cloudflare R2, 因此用户不得不麻烦一点自己去注册账号,
+以及填写配置信息, 下面我会详细说明如何操作 (详见后文 "准备工作" 部分).
 
 ## 大架构
 
@@ -15,9 +29,25 @@
 
 使用 `r2g render` 命令生成网页时, 有 3 种不同的输出:
 
-- **本地预览**: 图片地址是本地文件, 方便预览效果, 减少云端流量消费.
-- **正常网站**: 图片地址是云端文件, 通常就是将这个输出结果发布到网上.
-- **Cloudflare R2**: 直接将网页上传到云端, 通过在 R2 设置的网址即可访问相册.
+- **本地预览** (文件夹名: output_local):  
+  浏览该网页不会产生流量, 方便在本地预览效果, 减少云端流量消费.
+- **正常网站** (文件夹名: output_web):  
+  即使在本地浏览该网页也会产生流量,
+  通常将这个文件夹内的网页发布到网上 (例如 GitHub Pages).
+- **Cloudflare R2**:  
+  直接将网页上传到云端, 通过在 R2 设置的网址即可访问相册.
+
+具体而言, 当执行 `r2g render -all` 或 `r2g render NAME` 等命令时,
+都会同时输出 *本地预览* 与 *正常网站*.
+
+为了节省流量以及避免网络通讯耗费时间, 只有执行 `r2g render --to-cloud`
+命令时才会将网页上传到 Cloudflare R2.
+
+建议本地预览确认网页内容符合自己的期望后, 才执行 `r2g render --to-cloud`.
+
+**正常网站** (文件夹 output_web) 相当于一个静态网站,
+你可以采用 GitHub Pages 之类的服务将这个文件夹的内容发布到网上.
+
 
 ## Picture
 
@@ -71,15 +101,46 @@
   - 最新单图
   - 相册介绍(notes+story+相册列表)
 
-## Output (输出)
+## 准备工作
 
-有三种输出:
+为了让你的图片能通过互联网访问, 本软件采用的办法是上传图片到
+Cloudflare R2. 因此, 需要先开通 Cloudflare R2.
 
-- Cloudflare R2 (直接输出到云端)
-- 静态网站      (图片地址采用 R2 地址)
-- 静态网站      (图片地址采用本地地址/相对地址)
+### 开通 Cloudflare R2
 
-每一次渲染都会输出两种静态网站, 另外有一个专门的命令输出到云端.
+1. 注册账户 <https://www.cloudflare.com/>
+2. 启用 R2 服务 <https://developers.cloudflare.com/r2/get-started/>  
+   内含 10GB 免费容量, 流量免费, 注册时需要信用卡或 PayPal  
+   (注意: 上传下载等的操作次数超过上限也会产生费用,
+    详情以 Cloudflare 官方说明为准).
+3. 从 dashboard 进入 R2 页面，点击 Create bucket 创建一个数据桶。
+   建议 bucket 的名称设为 `my-gallery`
+4. 进入新建的 bucket, 点击 Settings,
+   在 Public Access 栏内点击 Allow Access,
+   该操作成功后可以看到 Public Bucket URL, 请复制保存, 后续有用.
+
+### 生成密钥
+
+(如果已经有密钥, 就不需要再生成了.)
+
+1. 在 R2 页面可以找到 Account ID, 请复制保存, 后续有用.
+2. 在 R2 页面点击 Manage R2 API Tokens
+3. 点击 Create API Token, 权限选择 Edit, 再点击右下角的 Create API
+   Token 按钮, 即可得到 Access Key ID 和 Secret Access Key
+
+**注意**:  
+Access Key ID 和 Secret Access Key 只显示一次, 请立即复制保存
+(建议保存到密码管理器中)
+
+### 五个重要信息
+
+经过上述操作后, 一共获得了 5 个重要信息, 请妥善保存这些信息:
+
+- bucket 名称 (以下称为 **bucket_name**)
+- Public Bucket URL (以下称为 **bucket_url**)
+- Account ID (以下称为 **accountid**)
+- Access Key ID (以下称为 **access_key_id**)
+- Secret Access Key (以下称为 **access_key_secret**)
 
 ## 创建一个新图库
 
@@ -93,9 +154,36 @@
 - **output_web** (正常网站, 图片地址是 R2 公开仓库的网址)
 - **gallery.toml** (图库作者, 图库简介等)
 
-请用文本编辑器打开 gallery.toml 填写图库作者, 图库简介等.
+### 填写图库信息
 
-执行命令 `r2g -info` 查看图库信息.
+如上所述, 创建图库后, 会得到一个 gallery.toml 文件,
+请用文本编辑器打开 gallery.toml, 其内容大概像这样:
+
+```toml
+author = '佚名'
+notes = '''
+My Gallery
+'''
+endpoint_url = 'https://<accountid>.r2.cloudflarestorage.com'
+aws_access_key_id = '<access_key_id>'
+aws_secret_access_key = '<access_key_secret>'
+bucket_name = '<bucket_name>'
+bucket_url = '<bucket_url>'
+```
+
+其中 `<accountid>` 等尖括号的位置要填写正确的值, 一共有 5 个尖括号,
+这五个值都可以在上文 `准备工作` 部分找到. (填写时, 不要保留尖括号.)
+
+填写正确的值后保存文件, 配置完成, 可以开始正常使用.
+
+### 注意 bucket_name
+
+每一个图库, 对应一个 bucket_name, 如果在本地新建第二个图库,
+那么在 Cloudflare R2 那边也要建立一个新的 bucket,
+并获得其 Public Bucket URL.
+
+全部图库的 accountid, access_key_id, access_key_secret 都是通用的,
+而 bucket_name 和 bucket_url 是每个图库独立的.
 
 ## 创建相册
 

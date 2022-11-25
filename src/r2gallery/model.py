@@ -54,17 +54,16 @@ class Album:
     r2_html    : str   # 相册网页的 R2 地址 (自动获取)
     checksum   : str   # sha1, 用来判断 notes/story 有无变更
     sort_by    : str   # 可选择 SortBy 里的五种排序方式
-    pictures     : list  # 图片文件名列表
+    pictures   : list  # 图片文件名列表
     cover      : str   # 封面 (指定一个图片文件名)
 
 
 @dataclass
 class Gallery:
-    author    : str   # 图库作者 (必填)
+    author    : str   # 图库作者 (默认:佚名)
     notes     : str   # 图库简介 (纯文本格式, 第一行是图库标题)
     story     : str   # 图库的故事 (Markdown 格式)
+    r2_html   : str   # 图库首页的 R2 地址 (自动获取)
     checksum  : str   # sha1, 用来判断 notes/story 有无变更
     frontpage : str   # 可选择 Frontpage 里的三种展示方式
     albums    : list  # 相册列表
-
-
