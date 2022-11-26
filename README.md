@@ -185,6 +185,38 @@ bucket_url = '<bucket_url>'
 全部图库的 accountid, access_key_id, access_key_secret 都是通用的,
 而 bucket_name 和 bucket_url 是每个图库独立的.
 
+### 填写图库作者与简介等
+
+在上述 gallery.toml 中, 有三个项目涉及图库的作者, 标题, 介绍等信息.
+
+- **author**: 作者名称, 默认佚名, 请改为你的真名或网名
+- **notes** (简介):
+  - 第一行会被自动提取作为图库的标题
+  - 若有更多介绍可从第二行开始写 (参照下面的例子)
+  - 有字数限制, 不可超过 512 个字
+- **story** (故事):
+  - story 与 上面的 notes 一样都是对图库的介绍
+  - 不同的是, notes 是纯文本, story 采用 Markdown 格式,
+    notes 有字数限制, story 无字数限制
+  - 因此, 如果你需要更丰富的格式, 或需要写较多内容, 可以填写 story
+
+示例:
+
+```toml
+author = '小帅'
+notes = '''
+小帅的相册
+
+这里主要是我日常拍的, 旅行拍的照片。
+'''
+story = '''
+## 关于我
+
+一般 story 的标题建议从 `h2` 开始，因为图库标题（**即 notes 的第一行**）
+已经占用了 h1
+'''
+```
+
 ## 创建相册
 
 - 使用命令 `r2g album -new NAME` 新建相册

@@ -1,9 +1,12 @@
+import hashlib
 import re
 from dataclasses import dataclass, asdict
 from enum import Enum, auto
 
 import arrow
+import tomli
 
+from .const import Gallery_Toml_Path
 
 RFC3339 = "YYYY-MM-DD HH:mm:ssZZ"
 
@@ -67,3 +70,37 @@ class Gallery:
     checksum  : str   # sha1, 用来判断 notes/story 有无变更
     frontpage : str   # 可选择 Frontpage 里的三种展示方式
     albums    : list  # 相册列表
+
+    @classmethod
+    def default(cls, title:str):
+        author = "佚名"
+        return Gallery(
+            author=author,
+            notes=title,
+            story="",
+            r2_html="",
+            checksum=text_checksum(author + title),
+            frontpage=Frontpage.Story.name,
+            albums=[]
+        )
+
+    @classmethod
+    def loads(cls):
+        """Loads the Gallery config from Gallery_Toml_Path."""
+        data = tomli_loads(Gallery_Toml_Path)
+        return Gallery(**data)
+
+
+def text_checksum(text:str) -> str:
+    return hashlib.sha1(text.encode()).hexdigest()
+
+
+def tomli_loads(file) -> dict:
+    """正确处理 utf-16"""
+    with open(file, "rb") as f:
+        text = f.read()
+        try:
+            text = text.decode()  # Default encoding is 'utf-8'.
+        except UnicodeDecodeError:
+            text = text.decode("utf-16").encode("utf-8").decode("utf-8")
+        return tomli.loads(text)
