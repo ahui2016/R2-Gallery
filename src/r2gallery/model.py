@@ -16,6 +16,9 @@ Filename_Forbid_Pattern = re.compile(r"[^._0-9a-zA-Z\-]")
 Short_Notes_Limit = 512
 """简单描述的长度上限，单位: UTF8字符"""
 
+Title_Limit = 32
+"""从简介中提取标题时, 标题的长度上限, 单位: UTF8字符"""
+
 
 class SortBy(Enum):
     """相册内的图片的排序方法"""
@@ -70,6 +73,11 @@ class Gallery:
     checksum  : str   # sha1, 用来判断 notes/story 有无变更
     frontpage : str   # 可选择 Frontpage 里的三种展示方式
     albums    : list  # 相册列表
+    endpoint_url          : str  # 以下 5 项是 Cloudflare R2 信息
+    aws_access_key_id     : str
+    aws_secret_access_key : str
+    bucket_name           : str
+    bucket_url            : str
 
     @classmethod
     def default(cls, title:str):
@@ -81,7 +89,12 @@ class Gallery:
             r2_html="",
             checksum=text_checksum(author + title),
             frontpage=Frontpage.Story.name,
-            albums=[]
+            albums=[],
+            endpoint_url='https://<accountid>.r2.cloudflarestorage.com',
+            aws_access_key_id = '<access_key_id>',
+            aws_secret_access_key = '<access_key_secret>',
+            bucket_name = '<bucket_name>',
+            bucket_url = '<bucket_url>',
         )
 
     @classmethod
