@@ -101,7 +101,16 @@ class Gallery:
     def loads(cls):
         """Loads the Gallery config from Gallery_Toml_Path."""
         data = tomli_loads(Gallery_Toml_Path)
-        return Gallery(**data)
+        ga = Gallery(**data)
+        ga.notes = ga.notes.strip()
+        ga.story = ga.story.strip()
+        return ga
+
+    def title(self):
+        """
+        :return: (result, err)
+        """
+        return get_title(self.notes)
 
 
 def text_checksum(text:str) -> str:
@@ -117,3 +126,26 @@ def tomli_loads(file) -> dict:
         except UnicodeDecodeError:
             text = text.decode("utf-16").encode("utf-8").decode("utf-8")
         return tomli.loads(text)
+
+
+def get_title(text:str):
+    """
+    :return: (result, err)
+    """
+    line = get_first_line(text)
+    if not line:
+        return None, "必须填写简介(标题)"
+    if len(line) >= Title_Limit:
+        return line[:Title_Limit], None
+    return line, None
+
+
+def get_first_line(text:str):
+    """
+    :return: str, 注意有可能返回空字符串。
+    """
+    for line in text.splitlines():
+        line = line.strip()
+        if line:
+            return line
+    return ""

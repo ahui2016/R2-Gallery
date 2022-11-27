@@ -3,9 +3,13 @@
 
 author = '{{cfg.author}}'
 
-notes = '''{{cfg.notes}}'''
+notes = '''
+{{cfg.notes}}
+'''
 
-story = '''{{cfg.story}}'''
+story = '''
+{{cfg.story}}
+'''
 
 r2_html = '{{cfg.r2_html}}'
 

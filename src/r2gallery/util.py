@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 from pathlib import Path
 
 import jinja2
@@ -25,7 +26,7 @@ tmplfile = dict(
 )
 
 def render_gallery_toml(cfg):
-    tmpl = jinja_env.get_template(tmplfile[Gallery_Toml])
+    tmpl = jinja_env.get_template(tmplfile['gallery_toml'])
     rendered = tmpl.render(dict(cfg=cfg))
     print(f"render and write {Gallery_Toml_Path}")
     Gallery_Toml_Path.write_text(rendered, encoding="utf-8")
@@ -72,3 +73,15 @@ def copy_templates():
     src_folder = Path(__file__).parent.joinpath(Templates)
     shutil.copytree(src_folder, Templates_Path)
 
+
+def print_err(err):
+    """如果有错误就打印, 没错误就忽略."""
+    if err:
+        print(f"Error: {err}", file=sys.stderr)
+
+
+def print_err_exist(ctx, err):
+    """若有错误则打印并结束程序, 无错误则忽略."""
+    if err:
+        print(f"Error: {err}", file=sys.stderr)
+        ctx.exit()

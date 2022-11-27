@@ -1,2 +1,3 @@
 env
 .idea
+src/r2gallery/__pycache__/
