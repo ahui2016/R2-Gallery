@@ -57,11 +57,28 @@ class Album:
     story      : str   # 相册的故事 (Markdown 格式)
     ctime      : str   # 相册创建时间
     utime      : str   # 相册更新时间 (比如添加图片, 就会更新该时间)
-    r2_html    : str   # 相册网页的 R2 地址 (自动获取)
-    checksum   : str   # sha1, 用来判断 notes/story 有无变更
-    sort_by    : str   # 可选择 SortBy 里的五种排序方式
+    sort_by    : str   # 相册内照片排序, 可选择 SortBy 里的五种排序方式
     pictures   : list  # 图片文件名列表
     cover      : str   # 封面 (指定一个图片文件名)
+    checksum   : str   # sha1, 用来判断 notes/story 有无变更
+    r2_html    : str   # 相册网页的 R2 地址 (自动获取)
+
+    @classmethod
+    def default(cls, foldername):
+        ctime = now()
+        return Album(
+            foldername=foldername,
+            author="",
+            notes=foldername,
+            story="",
+            ctime=ctime,
+            utime=ctime,
+            sort_by=SortBy.CTimeDesc.name,
+            pictures=[],
+            cover="",
+            checksum=text_checksum(foldername),
+            r2_html=""
+        )
 
 
 @dataclass
@@ -69,10 +86,10 @@ class Gallery:
     author    : str   # 图库作者 (默认:佚名)
     notes     : str   # 图库简介 (纯文本格式, 第一行是图库标题)
     story     : str   # 图库的故事 (Markdown 格式)
-    r2_html   : str   # 图库首页的 R2 地址 (自动获取)
-    checksum  : str   # sha1, 用来判断 notes/story 有无变更
     frontpage : str   # 可选择 Frontpage 里的三种展示方式
     albums    : list  # 相册列表
+    checksum  : str   # sha1, 用来判断 notes/story 有无变更
+    r2_html   : str   # 图库首页的 R2 地址 (自动获取)
     endpoint_url          : str  # 以下 5 项是 Cloudflare R2 信息
     aws_access_key_id     : str
     aws_secret_access_key : str
@@ -82,20 +99,22 @@ class Gallery:
     @classmethod
     def default(cls, title:str):
         author = "佚名"
-        return Gallery(
+        ga = Gallery(
             author=author,
             notes=title,
             story="",
-            r2_html="",
-            checksum=text_checksum(author + title),
             frontpage=Frontpage.Story.name,
             albums=[],
+            checksum="",
+            r2_html="",
             endpoint_url='https://<accountid>.r2.cloudflarestorage.com',
             aws_access_key_id = '<access_key_id>',
             aws_secret_access_key = '<access_key_secret>',
             bucket_name = '<bucket_name>',
             bucket_url = '<bucket_url>',
         )
+        ga.update_checksum()
+        return ga
 
     @classmethod
     def loads(cls):
@@ -111,6 +130,15 @@ class Gallery:
         :return: (result, err)
         """
         return get_title(self.notes)
+
+    def update_checksum(self):
+        """当 author, notes, story, frontpage, albums
+        的内容有变化时, 更新 checksum."""
+        albums = ''.join(self.albums)
+        text = self.author + self.notes + self.story + self.frontpage + albums
+        checksum = text_checksum(text)
+        if checksum != self.checksum:
+            self.checksum = checksum
 
 
 def text_checksum(text:str) -> str:
@@ -149,3 +177,14 @@ def get_first_line(text:str):
         if line:
             return line
     return ""
+
+
+def check_pathname(name: str):
+    """
+    :return: 有错返回 err: str, 无错返回空字符串。
+    """
+    if Filename_Forbid_Pattern.search(name) is None:
+        return False
+    else:
+        return "文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)" \
+               "\n注意：不能使用空格，请用下划线或短横线代替空格。"

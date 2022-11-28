@@ -7,6 +7,7 @@ Templates    = "templates"
 Output_Local = "output_local"
 Output_Web   = "output_web"
 Gallery_Toml = "gallery.toml"
+Album_Toml   = "album.toml"
 
 CWD               = Path.cwd().resolve()
 Templates_Path    = CWD.joinpath(Templates)

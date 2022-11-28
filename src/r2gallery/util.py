@@ -5,8 +5,9 @@ from pathlib import Path
 
 import jinja2
 
+from . import model
 from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
-    Gallery_Toml, Gallery_Toml_Path, Templates
+    Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml
 from .model import Gallery
 
 """
@@ -23,11 +24,12 @@ jinja_env = jinja2.Environment(
 # 将templates 文件夹内除了 tmplfile 之外的全部文件都复制到 output 文件夹
 tmplfile = dict(
     gallery_toml = Gallery_Toml,
+    album_toml   = Album_Toml,
 )
 
-def render_gallery_toml(cfg):
+def render_toml(data):
     tmpl = jinja_env.get_template(tmplfile['gallery_toml'])
-    rendered = tmpl.render(dict(cfg=cfg))
+    rendered = tmpl.render(dict(data=data))
     print(f"render and write {Gallery_Toml_Path}")
     Gallery_Toml_Path.write_text(rendered, encoding="utf-8")
 
@@ -39,7 +41,7 @@ def folder_not_empty(folder):
 def init_gallery():
     """在一个空文件夹中初始化一个图库.
 
-    :return: 有错返回 err: str, 无错返回空字符串。
+    :return: 有错返回 err: str, 无错返回 falsy 值。
     """
     if folder_not_empty(CWD):
         return f"Folder Not Empty: {CWD}"
@@ -47,9 +49,9 @@ def init_gallery():
     Output_Local_Path.mkdir()
     Output_Web_Path.mkdir()
     copy_templates()
-    render_gallery_toml(Gallery.default(CWD.name))
+    render_toml(Gallery.default(CWD.name))
     print(f"请用文本编辑器打开 {Gallery_Toml_Path} 填写图库相关信息。")
-    return ""
+    return None
 
 
 def get_gallery(ctx):
@@ -73,6 +75,19 @@ def copy_templates():
     src_folder = Path(__file__).parent.joinpath(Templates)
     shutil.copytree(src_folder, Templates_Path)
 
+
+def create_album(name:str):
+    if err := model.check_pathname(name):
+        return err
+
+    album_path = CWD.joinpath(name)
+    if album_path.exists():
+        return f"文件夹已存在: {name}"
+
+    album_path.mkdir()
+    render_toml(Gallery.default(CWD.name))
+    print(f"请用文本编辑器打开 {Gallery_Toml_Path} 填写图库相关信息。")
+    return None
 
 def print_err(err):
     """如果有错误就打印, 没错误就忽略."""
