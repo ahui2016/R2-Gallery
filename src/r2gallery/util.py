@@ -8,7 +8,7 @@ import jinja2
 from . import model
 from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
     Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml
-from .model import Gallery
+from .model import Gallery, Album
 
 """
 【关于返回值】
@@ -27,11 +27,12 @@ tmplfile = dict(
     album_toml   = Album_Toml,
 )
 
-def render_toml(data):
-    tmpl = jinja_env.get_template(tmplfile['gallery_toml'])
+
+def render_toml(tmpl_name:str, toml_path:Path, data):
+    tmpl = jinja_env.get_template(tmplfile[tmpl_name])
     rendered = tmpl.render(dict(data=data))
-    print(f"render and write {Gallery_Toml_Path}")
-    Gallery_Toml_Path.write_text(rendered, encoding="utf-8")
+    print(f"render and write {toml_path}")
+    toml_path.write_text(rendered, encoding="utf-8")
 
 
 def folder_not_empty(folder):
@@ -49,7 +50,8 @@ def init_gallery():
     Output_Local_Path.mkdir()
     Output_Web_Path.mkdir()
     copy_templates()
-    render_toml(Gallery.default(CWD.name))
+    render_toml('gallery_toml', Gallery_Toml_Path, Gallery.default(CWD.name))
+    print("图库创建成功。")
     print(f"请用文本编辑器打开 {Gallery_Toml_Path} 填写图库相关信息。")
     return None
 
@@ -85,9 +87,12 @@ def create_album(name:str):
         return f"文件夹已存在: {name}"
 
     album_path.mkdir()
-    render_toml(Gallery.default(CWD.name))
-    print(f"请用文本编辑器打开 {Gallery_Toml_Path} 填写图库相关信息。")
+    album_toml_path = album_path.joinpath(Album_Toml)
+    render_toml('album_toml', album_toml_path, Album.default(name))
+    print("相册创建成功。")
+    print(f"请用文本编辑器打开 {album_toml_path} 填写相册相关信息。")
     return None
+
 
 def print_err(err):
     """如果有错误就打印, 没错误就忽略."""

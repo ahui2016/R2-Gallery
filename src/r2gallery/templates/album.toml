@@ -1,0 +1,28 @@
+# 本文件采用 TOML 格式 https://toml.io/
+# 以下项目的含义及其填写方法详见 https://github.com/ahui2016/R2-Gallery
+
+foldername = '{{data.foldername}}'
+
+author="{{data.author}}"
+
+notes = '''
+{{data.notes}}
+'''
+
+story = '''
+{{data.story}}
+'''
+
+sort_by = '{{data.sort_by}}'
+
+pictures = [
+{% for pic in data.pictures %}
+    '''{{pic}}''',
+{% endfor %}
+]
+
+cover = '{{data.cover}}'
+
+checksum = '{{data.checksum}}'
+
+r2_html = '{{data.r2_html}}'

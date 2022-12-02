@@ -1,7 +1,6 @@
 import click
 
-from . import __version__, __package_name__, util
-from .model import Gallery
+from . import __version__, util
 from .util import print_err, print_err_exist, get_gallery
 
 """
@@ -67,3 +66,20 @@ def init_command(ctx):
     print_err(err)
     ctx.exit()
 
+
+@cli.command(context_settings=CONTEXT_SETTINGS)
+@click.option("name", "-new", help="Create a new album.")
+@click.pass_context
+def album(ctx, name):
+    """Operations about albums.
+
+    关于相册的操作。
+    """
+    _ = get_gallery(ctx)
+
+    if name:
+        err = util.create_album(name)
+        print_err(err)
+        ctx.exit()
+
+    click.echo(ctx.get_help())

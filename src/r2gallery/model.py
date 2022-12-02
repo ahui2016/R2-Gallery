@@ -55,8 +55,6 @@ class Album:
     author     : str   # 作者, 留空表示跟随图库作者
     notes      : str   # 相册简介 (纯文本格式, 第一行是相册标题)
     story      : str   # 相册的故事 (Markdown 格式)
-    ctime      : str   # 相册创建时间
-    utime      : str   # 相册更新时间 (比如添加图片, 就会更新该时间)
     sort_by    : str   # 相册内照片排序, 可选择 SortBy 里的五种排序方式
     pictures   : list  # 图片文件名列表
     cover      : str   # 封面 (指定一个图片文件名)
@@ -65,20 +63,28 @@ class Album:
 
     @classmethod
     def default(cls, foldername):
-        ctime = now()
-        return Album(
+        album = Album(
             foldername=foldername,
             author="",
             notes=foldername,
             story="",
-            ctime=ctime,
-            utime=ctime,
             sort_by=SortBy.CTimeDesc.name,
             pictures=[],
             cover="",
-            checksum=text_checksum(foldername),
+            checksum="",
             r2_html=""
         )
+        album.update_checksum()
+        return album
+
+    def update_checksum(self):
+        """当 author, notes, story, frontpage, albums
+        的内容有变化时, 更新 checksum."""
+        pictures = ''.join(self.pictures)
+        text = self.author + self.notes + self.story + self.sort_by + pictures + self.cover
+        checksum = text_checksum(text)
+        if checksum != self.checksum:
+            self.checksum = checksum
 
 
 @dataclass
