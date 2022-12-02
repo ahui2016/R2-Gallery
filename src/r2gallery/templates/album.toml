@@ -18,7 +18,7 @@ sort_by = '{{data.sort_by}}'
 pictures = [
 {% for pic in data.pictures %}
     '''{{pic}}''',
-{% endfor %}
+{%- endfor %}
 ]
 
 cover = '{{data.cover}}'

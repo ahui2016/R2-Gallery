@@ -13,8 +13,8 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
 def show_info(ctx):
-    ga = get_gallery(ctx)
-    title, err = ga.title()
+    gallery = get_gallery(ctx)
+    title, err = gallery.title()
     print_err_exist(ctx, err)
 
     print()
@@ -23,10 +23,9 @@ def show_info(ctx):
     print(f"[repo]    https://github.com/ahui2016/R2-Gallery")
     print()
     print(f"[Gallery] {title}")
-    print(f"[Author]  {ga.author}")
-    print(f"[Albums]  {len(ga.albums)}")
+    print(f"[Author]  {gallery.author}")
+    print(f"[Albums]  {len(gallery.albums)}")
     print()
-    ctx.exit()
 
 
 @click.group(invoke_without_command=True)
@@ -36,14 +35,25 @@ def show_info(ctx):
     is_flag=True,
     help="Show information about the gallery.",
 )
+@click.option(
+    "-update",
+    is_flag=True,
+    help="Add or remove toml files of all pictures."
+)
 @click.pass_context
-def cli(ctx, info):
+def cli(ctx, info, update):
     """R2-Gallery: 个人独立相册，采用 Cloudflare R2 作为图片储存。
 
     https://github.com/ahui2016/R2-Gallery/
     """
     if info:
         show_info(ctx)
+        ctx.exit()
+
+    if update:
+        gallery = get_gallery(ctx)
+        util.update_all_albums(gallery)
+        ctx.exit()
 
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
@@ -75,10 +85,10 @@ def album(ctx, name):
 
     关于相册的操作。
     """
-    _ = get_gallery(ctx)
+    gallery = get_gallery(ctx)
 
     if name:
-        err = util.create_album(name)
+        err = util.create_album(name, gallery)
         print_err(err)
         ctx.exit()
 

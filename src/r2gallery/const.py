@@ -8,6 +8,8 @@ Output_Local = "output_local"
 Output_Web   = "output_web"
 Gallery_Toml = "gallery.toml"
 Album_Toml   = "album.toml"
+Metadata     = "metadata"
+Thumbs       = "thumbs"
 
 CWD               = Path.cwd().resolve()
 Templates_Path    = CWD.joinpath(Templates)

@@ -146,6 +146,10 @@ class Gallery:
         if checksum != self.checksum:
             self.checksum = checksum
 
+    def add_album(self, album_name:str):
+        self.albums.insert(0, album_name)
+        self.update_checksum()
+
 
 def text_checksum(text:str) -> str:
     return hashlib.sha1(text.encode()).hexdigest()

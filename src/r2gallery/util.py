@@ -4,10 +4,11 @@ import sys
 from pathlib import Path
 
 import jinja2
+from PIL import Image
 
 from . import model
 from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
-    Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml
+    Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml, Metadata, Thumbs
 from .model import Gallery, Album
 
 """
@@ -35,6 +36,14 @@ def render_toml(tmpl_name:str, toml_path:Path, data):
     toml_path.write_text(rendered, encoding="utf-8")
 
 
+def render_gallery_toml(gallery:Gallery):
+    render_toml('gallery_toml', Gallery_Toml_Path, gallery)
+
+
+def render_album_toml(toml_path:Path, album:Album):
+    render_toml('album_toml', toml_path, album)
+
+
 def folder_not_empty(folder):
     return True if os.listdir(folder) else False
 
@@ -50,7 +59,7 @@ def init_gallery():
     Output_Local_Path.mkdir()
     Output_Web_Path.mkdir()
     copy_templates()
-    render_toml('gallery_toml', Gallery_Toml_Path, Gallery.default(CWD.name))
+    render_gallery_toml(Gallery.default(CWD.name))
     print("图库创建成功。")
     print(f"请用文本编辑器打开 {Gallery_Toml_Path} 填写图库相关信息。")
     return None
@@ -78,7 +87,7 @@ def copy_templates():
     shutil.copytree(src_folder, Templates_Path)
 
 
-def create_album(name:str):
+def create_album(name:str, gallery:Gallery):
     if err := model.check_pathname(name):
         return err
 
@@ -88,11 +97,47 @@ def create_album(name:str):
 
     album_path.mkdir()
     album_toml_path = album_path.joinpath(Album_Toml)
-    render_toml('album_toml', album_toml_path, Album.default(name))
+    metadata_path = album_path.joinpath(Metadata)
+    thumbs_path = album_path.joinpath(Thumbs)
+    thumbs_path.mkdir()
+    metadata_path.mkdir()
+    render_album_toml(album_toml_path, Album.default(name))
+    gallery.add_album(name)
+    render_gallery_toml(gallery)
     print("相册创建成功。")
     print(f"请用文本编辑器打开 {album_toml_path} 填写相册相关信息。")
     return None
 
+
+def update_all_albums(gallery:Gallery):
+    for album_name in gallery.albums:
+        album_path = CWD.joinpath(album_name)
+        if not album_path.exists():
+            print(f"相册不存在: {album_name}")
+            continue
+        update_album(album_path)
+
+
+def update_album(album_path:Path):
+    files = album_path.glob("*.*")
+    pics = [pic for pic in files if pic.is_file() and pic.name != Album_Toml]
+    for pic in pics:
+        im = open_image(pic)
+        if im is None:
+            print(f"Not Image: {pic.name}")
+        else:
+            print(im.format, im.size, im.mode)
+
+
+def open_image(file):
+    """
+    :return: Image | None
+    """
+    try:
+        im = Image.open(file)
+    except OSError:
+        im = None
+    return im
 
 def print_err(err):
     """如果有错误就打印, 没错误就忽略."""

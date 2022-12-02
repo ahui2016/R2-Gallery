@@ -16,7 +16,7 @@ frontpage = '{{data.frontpage}}'
 albums = [
 {% for album in data.albums %}
     '''{{album}}''',
-{% endfor %}
+{%- endfor %}
 ]
 
 checksum = '{{data.checksum}}'
