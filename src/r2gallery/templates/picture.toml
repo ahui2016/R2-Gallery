@@ -3,10 +3,7 @@
 
 # 以下标明 '可修改' 的项目可以直接编辑, 未标明的请勿直接编辑.
 
-foldername = '{{data.foldername}}'
-
-# 可修改, 通常留空
-author="{{data.author}}"
+filename = '{{data.filename}}'
 
 # 可修改
 notes = '''
@@ -18,19 +15,11 @@ story = '''
 {{data.story}}
 '''
 
-# 可修改, 请选择: 'CTime' / 'CTimeDesc' / 'List'
-sort_by = '{{data.sort_by}}'
-
 # 可修改
-pictures = [
-{% for pic in data.pictures %}
-    '''{{pic}}''',
-{%- endfor %}
-]
-
-# 可修改
-cover = '{{data.cover}}'
+ctime = '{{data.ctime}}'
 
 checksum = '{{data.checksum}}'
+
+r2_url = '{{data.r2_url}}'
 
 r2_html = '{{data.r2_html}}'

@@ -26,6 +26,12 @@ def show_info(ctx):
     print(f"[Author]  {gallery.author}")
     print(f"[Albums]  {len(gallery.albums)}")
     print()
+    print(f"[Image Width Max    ] {gallery.image_width_max} px")
+    print(f"[Image Height Max   ] {gallery.image_height_max} px")
+    print(f"[Image Size Max     ] {gallery.image_size_max} MB")
+    print(f"[Image Output Format] {gallery.image_output_format}")
+    print(f"[Thumbnail Size     ] {gallery.thumb_size}")
+    print()
 
 
 @click.group(invoke_without_command=True)

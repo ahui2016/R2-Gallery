@@ -8,8 +8,8 @@ from PIL import Image
 
 from . import model
 from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
-    Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml, Metadata, Thumbs
-from .model import Gallery, Album
+    Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml, Metadata, Thumbs, Dot_Toml, Picture_Toml
+from .model import Gallery, Album, Picture
 
 """
 【关于返回值】
@@ -26,6 +26,7 @@ jinja_env = jinja2.Environment(
 tmplfile = dict(
     gallery_toml = Gallery_Toml,
     album_toml   = Album_Toml,
+    picture_toml = Picture_Toml,
 )
 
 
@@ -42,6 +43,10 @@ def render_gallery_toml(gallery:Gallery):
 
 def render_album_toml(toml_path:Path, album:Album):
     render_toml('album_toml', toml_path, album)
+
+
+def render_picture_toml(toml_path:Path, pic:Picture):
+    render_toml('picture_toml', toml_path, pic)
 
 
 def folder_not_empty(folder):
@@ -126,8 +131,14 @@ def update_album(album_path:Path):
         if im is None:
             print(f"Not Image: {pic.name}")
         else:
-            print(im.format, im.size, im.mode)
+            pic_toml_name = pic.with_suffix(Dot_Toml).name
+            pic_toml_path = album_path.joinpath(Metadata, pic_toml_name)
+            if not pic_toml_path.exists():
+                render_picture_toml(pic_toml_path, Picture.default(pic.name))
 
+
+def create_thumb(img:Image):
+    pass
 
 def open_image(file):
     """
