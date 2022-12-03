@@ -16,6 +16,9 @@ Dot_Toml = ".toml"
 # Dot_Webp = ".webp"
 # Dot_Jpeg = ".jpeg"
 
+DateTimeOriginal = 36867
+DateTime         = 306
+
 CWD               = Path.cwd().resolve()
 Templates_Path    = CWD.joinpath(Templates)
 Output_Local_Path = CWD.joinpath(Output_Local)

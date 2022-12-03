@@ -9,6 +9,7 @@ import tomli
 from .const import Gallery_Toml_Path
 
 RFC3339 = "YYYY-MM-DD HH:mm:ssZZ"
+ImageDateTimeFormat = "YYYY:MM:DD HH:mm:ss"
 
 Filename_Forbid_Pattern = re.compile(r"[^._0-9a-zA-Z\-]")
 """文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)。"""
@@ -55,12 +56,14 @@ class Picture:
     r2_html  : str  # 图片网页的 R2 地址 (自动获取)
 
     @classmethod
-    def default(cls, filename):
+    def default(cls, filename:str, ctime:str=None):
+        if ctime is None:
+            ctime = now()
         pic = Picture(
             filename=filename,
             notes=filename,
             story="",
-            ctime=now(),
+            ctime=ctime,
             checksum="",
             r2_url="",
             r2_html="",
@@ -151,7 +154,7 @@ class Gallery:
             image_height_max=1000,
             image_size_max=2,
             image_output_format=ImageFormat.WebP.name,
-            thumb_size=128,
+            thumb_size=256,
             endpoint_url='https://<accountid>.r2.cloudflarestorage.com',
             aws_access_key_id = '<access_key_id>',
             aws_secret_access_key = '<access_key_secret>',

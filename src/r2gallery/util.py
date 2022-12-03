@@ -3,12 +3,14 @@ import shutil
 import sys
 from pathlib import Path
 
+import arrow
 import jinja2
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ExifTags
 
 from . import model
 from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
-    Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml, Metadata, Thumbs, Dot_Toml, Picture_Toml
+    Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml, Metadata, Thumbs, \
+    Dot_Toml, Picture_Toml, DateTime, DateTimeOriginal
 from .model import Gallery, Album, Picture
 
 """
@@ -131,15 +133,34 @@ def update_album(album_path:Path, gallery:Gallery):
         if img is None:
             print(f"Not Image: {pic.name}")
         else:
-            create_pic_toml_if_not_exists(pic, album_path)
+            exif = img.getexif()
+            print(f"exif: {exif}")
+            for k in exif.keys():
+                if type(k) == int:
+                    print(f"{ExifTags.TAGS[k]}({k}): {exif[k]}")
+                else:
+                    print(f"{k}: {exif[k]}")
+            create_pic_toml_if_not_exists(img, pic, album_path)
             create_thumb_if_not_exists(img, pic, album_path, gallery)
 
 
-def create_pic_toml_if_not_exists(pic_path:Path, album_path:Path):
+def get_image_datetime(img:Image):
+    exif = img.getexif()
+    if DateTimeOriginal in exif:
+        dt = arrow.get(exif[DateTimeOriginal], model.ImageDateTimeFormat)
+        return dt.to("local").format(model.RFC3339)
+    if DateTime in exif:
+        dt = arrow.get(exif[DateTime], model.ImageDateTimeFormat)
+        return dt.to("local").format(model.RFC3339)
+    return model.now()
+
+
+def create_pic_toml_if_not_exists(img:Image, pic_path:Path, album_path:Path):
     pic_toml_name = pic_path.with_suffix(Dot_Toml).name
     pic_toml_path = album_path.joinpath(Metadata, pic_toml_name)
     if not pic_toml_path.exists():
-        render_picture_toml(pic_toml_path, Picture.default(pic_path.name))
+        pic = Picture.default(pic_path.name, get_image_datetime(img))
+        render_picture_toml(pic_toml_path, pic)
 
 
 def create_thumb_if_not_exists(
@@ -154,10 +175,13 @@ def create_thumb_if_not_exists(
 # https://pillow.readthedocs.io/en/stable/handbook/tutorial.html
 def create_thumb(img:Image, thumb_path:Path, gallery:Gallery):
     img = ImageOps.exif_transpose(img)
-    img.thumbnail(gallery.thumbnail_size())
+    img = ImageOps.fit(img, gallery.thumbnail_size())
     img.save(thumb_path, gallery.image_output_format)
     print(f"Create thumbnail {thumb_path}")
 
+
+def resize_image(img:Image, pic_path:Path, gallery:Gallery):
+    pass
 
 def open_image(file):
     """
