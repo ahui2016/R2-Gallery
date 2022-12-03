@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 import jinja2
-from PIL import Image
+from PIL import Image, ImageOps
 
 from . import model
 from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
@@ -120,35 +120,54 @@ def update_all_albums(gallery:Gallery):
         if not album_path.exists():
             print(f"相册不存在: {album_name}")
             continue
-        update_album(album_path)
+        update_album(album_path, gallery)
 
 
-def update_album(album_path:Path):
+def update_album(album_path:Path, gallery:Gallery):
     files = album_path.glob("*.*")
     pics = [pic for pic in files if pic.is_file() and pic.name != Album_Toml]
     for pic in pics:
-        im = open_image(pic)
-        if im is None:
+        img = open_image(pic)
+        if img is None:
             print(f"Not Image: {pic.name}")
         else:
-            pic_toml_name = pic.with_suffix(Dot_Toml).name
-            pic_toml_path = album_path.joinpath(Metadata, pic_toml_name)
-            if not pic_toml_path.exists():
-                render_picture_toml(pic_toml_path, Picture.default(pic.name))
+            create_pic_toml_if_not_exists(pic, album_path)
+            create_thumb_if_not_exists(img, pic, album_path, gallery)
 
 
-def create_thumb(img:Image):
-    pass
+def create_pic_toml_if_not_exists(pic_path:Path, album_path:Path):
+    pic_toml_name = pic_path.with_suffix(Dot_Toml).name
+    pic_toml_path = album_path.joinpath(Metadata, pic_toml_name)
+    if not pic_toml_path.exists():
+        render_picture_toml(pic_toml_path, Picture.default(pic_path.name))
+
+
+def create_thumb_if_not_exists(
+        img:Image, pic_path:Path, album_path:Path, gallery:Gallery):
+    suffix = f".{gallery.image_output_format.lower()}"
+    thumb_name = pic_path.with_suffix(suffix).name
+    thumb_path = album_path.joinpath(Thumbs, thumb_name)
+    if not thumb_path.exists():
+        create_thumb(img, thumb_path, gallery)
+
+
+# https://pillow.readthedocs.io/en/stable/handbook/tutorial.html
+def create_thumb(img:Image, thumb_path:Path, gallery:Gallery):
+    img = ImageOps.exif_transpose(img)
+    img.thumbnail(gallery.thumbnail_size())
+    img.save(thumb_path, gallery.image_output_format)
+    print(f"Create thumbnail {thumb_path}")
+
 
 def open_image(file):
     """
     :return: Image | None
     """
     try:
-        im = Image.open(file)
+        img = Image.open(file)
     except OSError:
-        im = None
-    return im
+        img = None
+    return img
 
 def print_err(err):
     """如果有错误就打印, 没错误就忽略."""

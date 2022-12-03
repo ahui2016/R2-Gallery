@@ -9,12 +9,12 @@ Output_Web   = "output_web"
 Gallery_Toml = "gallery.toml"
 Album_Toml   = "album.toml"
 Picture_Toml = "picture.toml"
-Dot_Toml     = ".toml"
 Metadata     = "metadata"
 Thumbs       = "thumbs"
 
-webp = "webp"
-jpeg = "jpeg"
+Dot_Toml = ".toml"
+# Dot_Webp = ".webp"
+# Dot_Jpeg = ".jpeg"
 
 CWD               = Path.cwd().resolve()
 Templates_Path    = CWD.joinpath(Templates)

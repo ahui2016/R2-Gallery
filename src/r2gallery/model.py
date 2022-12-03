@@ -189,6 +189,10 @@ class Gallery:
         self.albums.insert(0, album_name)
         self.update_checksum()
 
+    def thumbnail_size(self):
+        """用于 PIL.Image.thumbnail(size)"""
+        return self.thumb_size, self.thumb_size
+
 
 def text_checksum(text:str) -> str:
     return hashlib.sha1(text.encode()).hexdigest()
