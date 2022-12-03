@@ -10,7 +10,8 @@ from PIL import Image, ImageOps, ExifTags
 from . import model
 from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
     Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml, Metadata, Thumbs, \
-    Dot_Toml, Picture_Toml, DateTime, DateTimeOriginal
+    Dot_Toml, Picture_Toml, DateTime, DateTimeOriginal, MB, ImageDateTimeFormat, \
+    ImageWidth, ImageLength, Orientation
 from .model import Gallery, Album, Picture
 
 """
@@ -117,17 +118,37 @@ def create_album(name:str, gallery:Gallery):
 
 
 def update_all_albums(gallery:Gallery):
+    albums = get_all_albums(gallery)
+    for album_path in albums:
+        update_album(album_path, gallery)
+
+
+def resize_all_albums_pics(gallery:Gallery):
+    albums = get_all_albums(gallery)
+    for album_path in albums:
+        resize_oversize_pics(album_path, gallery)
+
+
+def get_all_albums(gallery:Gallery):
+    albums = []
     for album_name in gallery.albums:
         album_path = CWD.joinpath(album_name)
         if not album_path.exists():
             print(f"相册不存在: {album_name}")
             continue
-        update_album(album_path, gallery)
+        albums.append(album_path)
+    return albums
 
 
 def update_album(album_path:Path, gallery:Gallery):
     files = album_path.glob("*.*")
     pics = [pic for pic in files if pic.is_file() and pic.name != Album_Toml]
+
+    oversize_pics = get_oversize_pics(pics, gallery)
+    if oversize_pics:
+        print_oversize_pics(oversize_pics)
+        return
+
     for pic in pics:
         img = open_image(pic)
         if img is None:
@@ -144,13 +165,56 @@ def update_album(album_path:Path, gallery:Gallery):
             create_thumb_if_not_exists(img, pic, album_path, gallery)
 
 
+def resize_oversize_pics(album_path:Path, gallery:Gallery):
+    files = album_path.glob("*.*")
+    pics = [pic for pic in files if pic.is_file() and pic.name != Album_Toml]
+    oversize_pics = get_oversize_pics(pics, gallery)
+    for pic in oversize_pics:
+        img = open_image(pic)
+        exif = img.getexif()
+        img = resize_image(img, gallery)
+        suffix = f".{gallery.image_output_format.lower()}"
+        pic_path = pic.with_suffix(suffix)
+        img.save(pic_path, gallery.image_output_format, exif=reset_exif(exif))
+        print(f"Resize to {pic_path}")
+
+
+def reset_exif(exif):
+    """resize后, 图片的宽, 高, 方向可能发生变化"""
+    exif[Orientation] = 1
+    if ImageWidth in exif:
+        del exif[ImageWidth]
+    if ImageLength in exif:
+        del exif[ImageLength]
+    return exif
+
+
+def print_oversize_pics(oversize_pics):
+    if oversize_pics:
+        print("以下图片体积超过上限，请手动缩小图片，或使用 `r2g --force-resize` 自动缩小图片。")
+        print(f"另外，可在 {Gallery_Toml_Path} 文件中修改图片体积上限（包括高度、宽度、占用空间）。")
+        for pic in oversize_pics:
+            print(pic)
+
+
+def get_oversize_pics(pics:list[Path], gallery:Gallery) -> list:
+    oversize_pics = []
+    for pic in pics:
+        img = open_image(pic)
+        if img is None:
+            continue
+        if is_image_oversize(img, pic, gallery):
+            oversize_pics.append(pic)
+    return oversize_pics
+
+
 def get_image_datetime(img:Image):
     exif = img.getexif()
     if DateTimeOriginal in exif:
-        dt = arrow.get(exif[DateTimeOriginal], model.ImageDateTimeFormat)
+        dt = arrow.get(exif[DateTimeOriginal], ImageDateTimeFormat)
         return dt.to("local").format(model.RFC3339)
     if DateTime in exif:
-        dt = arrow.get(exif[DateTime], model.ImageDateTimeFormat)
+        dt = arrow.get(exif[DateTime], ImageDateTimeFormat)
         return dt.to("local").format(model.RFC3339)
     return model.now()
 
@@ -172,7 +236,6 @@ def create_thumb_if_not_exists(
         create_thumb(img, thumb_path, gallery)
 
 
-# https://pillow.readthedocs.io/en/stable/handbook/tutorial.html
 def create_thumb(img:Image, thumb_path:Path, gallery:Gallery):
     img = ImageOps.exif_transpose(img)
     img = ImageOps.fit(img, gallery.thumbnail_size())
@@ -180,8 +243,39 @@ def create_thumb(img:Image, thumb_path:Path, gallery:Gallery):
     print(f"Create thumbnail {thumb_path}")
 
 
-def resize_image(img:Image, pic_path:Path, gallery:Gallery):
-    pass
+def resize_image(img:Image, gallery:Gallery):
+    """
+    :return: Image | None
+    """
+    img = ImageOps.exif_transpose(img)
+    changed = False
+    width, height = float(img.size[0]), float(img.size[1])
+    width_max, height_max = float(gallery.image_width_max), float(gallery.image_height_max)
+    if height > height_max:
+        ratio = height_max / height
+        width = width * ratio
+        height = height_max
+        changed = True
+    if width > width_max:
+        ratio = width_max / width
+        height = height * ratio
+        width = width_max
+        changed = True
+    if changed:
+        size = round(width), round(height)
+        img = img.resize(size)
+    return img
+
+
+def is_image_oversize(img:Image, file:Path, gallery:Gallery):
+    filesize = file.lstat().st_size
+    width, height = img.size
+    if width > gallery.image_width_max \
+            or height > gallery.image_height_max \
+            or filesize > gallery.image_size_max * MB:
+        return True
+    return False
+
 
 def open_image(file):
     """
@@ -192,6 +286,7 @@ def open_image(file):
     except OSError:
         img = None
     return img
+
 
 def print_err(err):
     """如果有错误就打印, 没错误就忽略."""

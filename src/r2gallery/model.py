@@ -6,10 +6,7 @@ from enum import Enum, auto
 import arrow
 import tomli
 
-from .const import Gallery_Toml_Path
-
-RFC3339 = "YYYY-MM-DD HH:mm:ssZZ"
-ImageDateTimeFormat = "YYYY:MM:DD HH:mm:ss"
+from .const import Gallery_Toml_Path, RFC3339
 
 Filename_Forbid_Pattern = re.compile(r"[^._0-9a-zA-Z\-]")
 """文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)。"""

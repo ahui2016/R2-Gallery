@@ -46,8 +46,13 @@ def show_info(ctx):
     is_flag=True,
     help="Add or remove toml files of all pictures."
 )
+@click.option(
+    "--force-resize",
+    is_flag=True,
+    help="Force resize all oversize pictures."
+)
 @click.pass_context
-def cli(ctx, info, update):
+def cli(ctx, info, update, force_resize):
     """R2-Gallery: 个人独立相册，采用 Cloudflare R2 作为图片储存。
 
     https://github.com/ahui2016/R2-Gallery/
@@ -59,6 +64,12 @@ def cli(ctx, info, update):
     if update:
         gallery = get_gallery(ctx)
         util.update_all_albums(gallery)
+        ctx.exit()
+
+    if force_resize:
+        click.confirm("注意，强制缩小图片有可能覆盖原图，请先备份原图。确认执行吗？", abort=True)
+        gallery = get_gallery(ctx)
+        util.resize_all_albums_pics(gallery)
         ctx.exit()
 
     if ctx.invoked_subcommand is None:

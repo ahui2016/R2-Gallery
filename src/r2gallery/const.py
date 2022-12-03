@@ -18,6 +18,14 @@ Dot_Toml = ".toml"
 
 DateTimeOriginal = 36867
 DateTime         = 306
+Orientation      = 274
+ImageWidth       = 256
+ImageLength      = 257
+
+RFC3339 = "YYYY-MM-DD HH:mm:ssZZ"
+ImageDateTimeFormat = "YYYY:MM:DD HH:mm:ss"
+
+MB = 1024 * 1024
 
 CWD               = Path.cwd().resolve()
 Templates_Path    = CWD.joinpath(Templates)
