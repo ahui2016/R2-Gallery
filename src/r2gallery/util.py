@@ -129,6 +129,30 @@ def resize_all_albums_pics(gallery:Gallery):
         resize_oversize_pics(album_path, gallery)
 
 
+def check_all_albums_pic_names(gallery:Gallery):
+    """
+    :return: 零表示没有重复的文件名, 大于零表示有重复的文件名
+    """
+    album_paths = get_all_albums(gallery)
+    albums = {}
+    for album_path in album_paths:
+        names = check_album_pic_names(album_path)
+        if names:
+            albums[album_path.name] = names
+
+    if len(albums) > 0:
+        print_double_names(albums)
+
+    return len(albums)
+
+
+def print_double_names(albums:dict):
+    print("请修改以下文件名, 使每个文件名都是唯一 (不分大小写, 不管后缀名)")
+    for album_name, pic_names in albums.items():
+        for pic_name in pic_names:
+            print(f"{album_name}/{pic_name}")
+
+
 def get_all_albums(gallery:Gallery):
     albums = []
     for album_name in gallery.albums:
@@ -163,6 +187,29 @@ def update_album(album_path:Path, gallery:Gallery):
                     print(f"{k}: {exif[k]}")
             create_pic_toml_if_not_exists(img, pic, album_path)
             create_thumb_if_not_exists(img, pic, album_path, gallery)
+
+
+def check_album_pic_names(album_path:Path) -> list[str]:
+    """找出同一相册内的同名图片 (不分大小写, 不管后缀名)"""
+    files = album_path.glob("*.*")
+    pics = [pic for pic in files if pic.is_file() and pic.name != Album_Toml]
+
+    count = {}
+    for pic in pics:
+        stem = pic.stem.lower()
+        if stem in count:
+            item = count[stem]
+            item[0] += 1
+            item[1].append(pic.name)
+        else:
+            count[stem] = [1, [pic.name]]
+
+    names = []
+    for item in count.values():
+        if item[0] > 1:
+            names.extend(item[1])
+
+    return names
 
 
 def resize_oversize_pics(album_path:Path, gallery:Gallery):
@@ -286,6 +333,11 @@ def open_image(file):
     except OSError:
         img = None
     return img
+
+
+def rename_pic(name:str, pic_path:Path):
+    #TODO: resize时注意要改名
+    pass
 
 
 def print_err(err):

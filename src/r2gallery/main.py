@@ -63,6 +63,8 @@ def cli(ctx, info, update, force_resize):
 
     if update:
         gallery = get_gallery(ctx)
+        if util.check_all_albums_pic_names(gallery) > 0:
+            ctx.exit()
         util.update_all_albums(gallery)
         ctx.exit()
 
