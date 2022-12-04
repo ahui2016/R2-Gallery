@@ -96,7 +96,7 @@ def copy_templates():
 
 
 def create_album(name:str, gallery:Gallery):
-    if err := model.check_pathname(name):
+    if err := model.check_filename(name):
         return err
 
     album_path = CWD.joinpath(name)
@@ -117,28 +117,25 @@ def create_album(name:str, gallery:Gallery):
     return None
 
 
-def update_all_albums(gallery:Gallery):
-    albums = get_all_albums(gallery)
-    for album_path in albums:
-        update_album(album_path, gallery)
+def update_all_albums(album_pics:dict, gallery:Gallery):
+    for album, pics in album_pics.items():
+        update_album(pics, Path(album), gallery)
 
 
-def resize_all_albums_pics(gallery:Gallery):
-    albums = get_all_albums(gallery)
-    for album_path in albums:
-        resize_oversize_pics(album_path, gallery)
+def resize_all_albums_pics(album_pics:dict, gallery:Gallery):
+    for pics in album_pics.values():
+        resize_oversize_pics(pics, gallery)
 
 
-def check_all_albums_pic_names(gallery:Gallery):
+def check_all_double_names(album_pics:dict):
     """
     :return: 零表示没有重复的文件名, 大于零表示有重复的文件名
     """
-    album_paths = get_all_albums(gallery)
     albums = {}
-    for album_path in album_paths:
-        names = check_album_pic_names(album_path)
+    for album, pics in album_pics.items():
+        names = get_double_names(pics)
         if names:
-            albums[album_path.name] = names
+            albums[Path(album).name] = names
 
     if len(albums) > 0:
         print_double_names(albums)
@@ -153,7 +150,24 @@ def print_double_names(albums:dict):
             print(f"{album_name}/{pic_name}")
 
 
+def get_all_album_pictures(gallery:Gallery):
+    """获取全部相册的全部图片的 Path"""
+    albums = get_all_albums(gallery)
+    album_pics = {}
+    for album_path in albums:
+        album_pics[str(album_path)] = get_pic_files(album_path)
+    return album_pics
+
+
+def get_pic_files(album_path:Path):
+    """获取指定相册内全部图片的 Path"""
+    files = album_path.glob("*.*")
+    pics = [pic for pic in files if pic.is_file() and pic.name != Album_Toml]
+    return pics
+
+
 def get_all_albums(gallery:Gallery):
+    """获取全部相册的 Path"""
     albums = []
     for album_name in gallery.albums:
         album_path = CWD.joinpath(album_name)
@@ -164,10 +178,7 @@ def get_all_albums(gallery:Gallery):
     return albums
 
 
-def update_album(album_path:Path, gallery:Gallery):
-    files = album_path.glob("*.*")
-    pics = [pic for pic in files if pic.is_file() and pic.name != Album_Toml]
-
+def update_album(pics:list, album_path:Path, gallery:Gallery):
     oversize_pics = get_oversize_pics(pics, gallery)
     if oversize_pics:
         print_oversize_pics(oversize_pics)
@@ -189,11 +200,8 @@ def update_album(album_path:Path, gallery:Gallery):
             create_thumb_if_not_exists(img, pic, album_path, gallery)
 
 
-def check_album_pic_names(album_path:Path) -> list[str]:
+def get_double_names(pics:list) -> list[str]:
     """找出同一相册内的同名图片 (不分大小写, 不管后缀名)"""
-    files = album_path.glob("*.*")
-    pics = [pic for pic in files if pic.is_file() and pic.name != Album_Toml]
-
     count = {}
     for pic in pics:
         stem = pic.stem.lower()
@@ -212,9 +220,16 @@ def check_album_pic_names(album_path:Path) -> list[str]:
     return names
 
 
-def resize_oversize_pics(album_path:Path, gallery:Gallery):
-    files = album_path.glob("*.*")
-    pics = [pic for pic in files if pic.is_file() and pic.name != Album_Toml]
+def get_bad_pic_names(files:list) -> list[str]:
+    """找出相册内不符合要求的图片文件名"""
+    bad_names = []
+    for file in files:
+        if model.check_filename(file.name):
+            bad_names.append(file.name)
+    return bad_names
+
+
+def resize_oversize_pics(pics:list, gallery:Gallery):
     oversize_pics = get_oversize_pics(pics, gallery)
     for pic in oversize_pics:
         img = open_image(pic)

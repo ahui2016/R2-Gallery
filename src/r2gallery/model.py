@@ -249,12 +249,12 @@ def get_first_line(text:str):
     return ""
 
 
-def check_pathname(name: str):
+def check_filename(name: str):
     """
     :return: 有错返回 err: str, 无错返回空字符串。
     """
     if Filename_Forbid_Pattern.search(name) is None:
         return False
     else:
-        return "文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)" \
+        return "文件名/文件夹名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)" \
                "\n注意：不能使用空格，请用下划线或短横线代替空格。"
