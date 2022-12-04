@@ -220,8 +220,7 @@ def resize_oversize_pics(album_path:Path, gallery:Gallery):
         img = open_image(pic)
         exif = img.getexif()
         img = resize_image(img, gallery)
-        suffix = f".{gallery.image_output_format.lower()}"
-        pic_path = pic.with_suffix(suffix)
+        pic_path = pic.with_suffix(gallery.thumb_suffix())
         img.save(pic_path, gallery.image_output_format, exif=reset_exif(exif))
         print(f"Resize to {pic_path}")
 
@@ -270,14 +269,13 @@ def create_pic_toml_if_not_exists(img:Image, pic_path:Path, album_path:Path):
     pic_toml_name = pic_path.with_suffix(Dot_Toml).name
     pic_toml_path = album_path.joinpath(Metadata, pic_toml_name)
     if not pic_toml_path.exists():
-        pic = Picture.default(pic_path.name, get_image_datetime(img))
+        pic = Picture.default(pic_path, get_image_datetime(img))
         render_picture_toml(pic_toml_path, pic)
 
 
 def create_thumb_if_not_exists(
         img:Image, pic_path:Path, album_path:Path, gallery:Gallery):
-    suffix = f".{gallery.image_output_format.lower()}"
-    thumb_name = pic_path.with_suffix(suffix).name
+    thumb_name = pic_path.with_suffix(gallery.thumb_suffix()).name
     thumb_path = album_path.joinpath(Thumbs, thumb_name)
     if not thumb_path.exists():
         create_thumb(img, thumb_path, gallery)
@@ -336,7 +334,6 @@ def open_image(file):
 
 
 def rename_pic(name:str, pic_path:Path):
-    #TODO: resize时注意要改名
     pass
 
 

@@ -2,6 +2,7 @@ import hashlib
 import re
 from dataclasses import dataclass
 from enum import Enum, auto
+from pathlib import Path
 
 import arrow
 import tomli
@@ -32,6 +33,8 @@ class Frontpage(Enum):
     List   = auto()  # 只展示相册列表
 
 
+# 注意! 本软件暂时只能使用 JPEG, 原本打算让用户自由选择格式,
+# 但后来想暂时先保持简单, 以后看情况再考虑让用户选择.
 class ImageFormat(Enum):
     """缩小图片或生成缩略图时, 输出的图片格式"""
     WebP = auto()
@@ -44,7 +47,7 @@ def now():
 
 @dataclass
 class Picture:
-    filename : str  # 文件名 (只能使用半角英数, 建议尽量简短)
+    file_id  : str  # 文件名作为 id (不含后缀名, 转小写)
     notes    : str  # 简单描述 (纯文本格式, 第一行是图片标题)
     story    : str  # 图片的故事 (Markdown 格式)
     ctime    : str  # 拍摄或创作或发布日期
@@ -53,12 +56,13 @@ class Picture:
     r2_html  : str  # 图片网页的 R2 地址 (自动获取)
 
     @classmethod
-    def default(cls, filename:str, ctime:str=None):
+    def default(cls, file:Path, ctime:str=None):
         if ctime is None:
             ctime = now()
+        file_id = file.stem.lower()
         pic = Picture(
-            filename=filename,
-            notes=filename,
+            file_id=file_id,
+            notes=file_id,
             story="",
             ctime=ctime,
             checksum="",
@@ -66,6 +70,15 @@ class Picture:
             r2_html="",
         )
         pic.update_checksum()
+        return pic
+
+    @classmethod
+    def loads(cls, toml_path:Path):
+        """Loads TOML to a Picture."""
+        data = tomli_loads(toml_path)
+        pic = Picture(**data)
+        pic.notes = pic.notes.strip()
+        pic.story = pic.story.strip()
         return pic
 
     def update_checksum(self):
@@ -150,7 +163,7 @@ class Gallery:
             image_width_max=1000,
             image_height_max=1000,
             image_size_max=2,
-            image_output_format=ImageFormat.WebP.name,
+            image_output_format=ImageFormat.JPEG.name,
             thumb_size=256,
             endpoint_url='https://<accountid>.r2.cloudflarestorage.com',
             aws_access_key_id = '<access_key_id>',
@@ -165,10 +178,11 @@ class Gallery:
     def loads(cls):
         """Loads the Gallery config from Gallery_Toml_Path."""
         data = tomli_loads(Gallery_Toml_Path)
-        ga = Gallery(**data)
-        ga.notes = ga.notes.strip()
-        ga.story = ga.story.strip()
-        return ga
+        gallery = Gallery(**data)
+        gallery.notes = gallery.notes.strip()
+        gallery.story = gallery.story.strip()
+        gallery.frontpage = gallery.frontpage.capitalize()
+        return gallery
 
     def title(self):
         """
@@ -192,6 +206,9 @@ class Gallery:
     def thumbnail_size(self):
         """用于 PIL.Image.thumbnail(size)"""
         return self.thumb_size, self.thumb_size
+
+    def thumb_suffix(self):
+        return f".{self.image_output_format.lower()}"
 
 
 def text_checksum(text:str) -> str:

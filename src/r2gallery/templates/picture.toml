@@ -3,7 +3,7 @@
 
 # 以下标明 '可修改' 的项目可以直接编辑, 未标明的请勿直接编辑.
 
-filename = '{{data.filename}}'
+file_id = '{{data.file_id}}'
 
 # 可修改
 notes = '''

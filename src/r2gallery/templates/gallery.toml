@@ -1,7 +1,6 @@
 # 本文件采用 TOML 格式 https://toml.io/
 # 以下项目的含义及其填写方法详见 https://github.com/ahui2016/R2-Gallery
 
-# 以下标明 '可修改' 的项目可以直接编辑, 未标明的请勿直接编辑.
 
 # 可修改
 author = '{{data.author}}'
@@ -26,15 +25,13 @@ albums = [
 {%- endfor %}
 ]
 
+# 注意, 请勿修改 checksum, r2_html, image_output_format
 checksum = '{{data.checksum}}'
-
 r2_html = '{{data.r2_html}}'
+image_output_format = '{{data.image_output_format}}'
 
 # 可修改, 单位: MB
 image_size_max = {{data.image_size_max}}
-
-# 可修改, 请选择: 'WebP' / 'JPEG'
-image_output_format = '{{data.image_output_format}}'
 
 # 以下全部项目均可修改
 
