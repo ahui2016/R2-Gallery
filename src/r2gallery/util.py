@@ -5,7 +5,7 @@ from pathlib import Path
 
 import arrow
 import jinja2
-from PIL import Image, ImageOps, ExifTags
+from PIL import Image, ImageOps
 
 from . import model
 from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
@@ -203,20 +203,28 @@ def update_album(pics:list, album_path:Path, gallery:Gallery):
         print_oversize_pics(oversize_pics)
         return
 
+    new_pics = []
     for pic in pics:
         img = open_image(pic)
         if img is None:
             print(f"Not Image: {pic.name}")
         else:
-            exif = img.getexif()
-            print(f"exif: {exif}")
-            for k in exif.keys():
-                if type(k) == int:
-                    print(f"{ExifTags.TAGS[k]}({k}): {exif[k]}")
-                else:
-                    print(f"{k}: {exif[k]}")
-            create_pic_toml_if_not_exists(img, pic, album_path)
+            if create_pic_toml_if_not_exists(img, pic, album_path):
+                new_pics.append(pic.name)
             create_thumb_if_not_exists(img, pic, album_path, gallery)
+
+    update_album_pictures(new_pics, album_path)
+
+
+def update_album_pictures(new_pics:list, album_path:Path):
+    if not new_pics:
+        return
+    album_toml_path = album_path.joinpath(Album_Toml)
+    album = Album.loads(album_toml_path)
+    album.pictures = new_pics + album.pictures
+    if not album.cover:
+        album.cover = new_pics[0]
+    render_album_toml(album_toml_path, album)
 
 
 def get_double_names(pics:list) -> list[str]:
@@ -300,11 +308,16 @@ def get_image_datetime(img:Image):
 
 
 def create_pic_toml_if_not_exists(img:Image, pic_path:Path, album_path:Path):
+    """
+    :return: True 表示这是新图片, 否则返回 False
+    """
     pic_toml_name = pic_path.with_suffix(Dot_Toml).name
     pic_toml_path = album_path.joinpath(Metadata, pic_toml_name)
     if not pic_toml_path.exists():
         pic = Picture.default(pic_path, get_image_datetime(img))
         render_picture_toml(pic_toml_path, pic)
+        return True
+    return False
 
 
 def create_thumb_if_not_exists(

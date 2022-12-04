@@ -26,6 +26,16 @@ class SortBy(Enum):
     List      = auto()  # 用列表指定顺序
 
 
+def sort_by_from(text:str):
+    n = len(text)
+    if n <= len("List"):
+        return SortBy.List
+    elif n >= len("CTimeDesc"):
+        return SortBy.CTimeDesc
+    else:
+        return SortBy.CTime
+
+
 class Frontpage(Enum):
     """图库首页的展示方式"""
     Story  = auto()  # 展示图库简介, 故事及相册列表
@@ -115,6 +125,16 @@ class Album:
             r2_html=""
         )
         album.update_checksum()
+        return album
+
+    @classmethod
+    def loads(cls, toml_path:Path):
+        """Loads TOML to an Album."""
+        data = tomli_loads(toml_path)
+        album = Album(**data)
+        album.notes = album.notes.strip()
+        album.story = album.story.strip()
+        album.sort_by = sort_by_from(album.sort_by).name
         return album
 
     def update_checksum(self):
