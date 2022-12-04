@@ -76,15 +76,15 @@ Cloudflare R2 是一种云储存服务, 本软件用它来储存图片.
 - r2_html, 相册网页的 R2 地址 (自动获取)
 - checksum, 用来判断 notes/story 有无变更
 - sort_by(排序方法): 按创建时间/按更新时间/由列表指定等共 5 种排序方式
-- 采用 SortBy.List 以外的方式时, Pictures 列表可以为空
-- 采用 SortBy.List 方式时, 必须填写 Pictures 列表
-- 采用 SortBy.List 方式时, 只显示列表中的图片, 未列出的就不会显示
-  (但图片本身仍可被公开访问, 只是不出现在相册中)
-- 采用 SortBy.List 以外的方式时, 使用命令
-  `r2g album --rewrite-sortby-list -name NAME`
-  可以自动填充 Pictures 列表 (目的是方便后续改为 SortBy.List 方式)
+  - 采用 SortBy.List 以外的方式时, Pictures 列表可以为空
+  - 采用 SortBy.List 方式时, 必须填写 Pictures 列表
+  - 采用 SortBy.List 方式时, 只显示列表中的图片, 未列出的就不会显示
+    (但图片本身仍可被公开访问, 只是不出现在相册中)
+  - 采用 SortBy.List 以外的方式时, 使用命令
+    `r2g album --rewrite-sortby-list -name NAME`
+    可以自动填充 Pictures 列表 (目的是方便后续改为 SortBy.List 方式)
 - Pictures (图片文件名列表), 只在采用 SortBy.List 方式时才生效
-- 采用 SortBy.List 方式时, 如果添加图片, 则自动添加到列表头部
+- 添加图片时, 则自动添加到 Pictures 列表头部
 - cover, 指定一个图片文件名作为相册封面, 留空则采用第一张
 
 ## Gallery
@@ -256,6 +256,20 @@ story = '''
   - 在 Linux 里, 使用 `-i` 开关, 例如 `mv -i src.jpg dest.jpg`
   - 在 Windows 里, 使用 `-cf` 开关, 例如 `mv -cf src.jpg dest.jpg`
 
+### 填写图片信息
+
+添加一张或多张图片到一个或多个相册文件夹后, 在图库根目录执行命令
+`r2g -update` 给新增的图片生成同名 toml 文件.
+
+> 注意: `r2g -update` 只处理 gallery.toml 中的 albums 列表中的相册.
+
+- 请在 toml 文件里填写图片简介 (默认为图片文件名)
+- 相册简介采用纯文本格式, 第一行是相册标题
+- 如果有较长的描述, 可以写在 story 里, 采用 Markdown 格式
+
+填写信息后, 执行命令 `r2g render NAME` (其中 NAME 是相册文件夹名)
+或 `r2g render -all` 更新网页.
+
 ### 图片体积上限
 
 注意, 本软件并非图片备份软件!
@@ -284,20 +298,6 @@ story = '''
 如上所述, 由于有可能覆盖原图, 因此请先备份原图.
 
 还要注意, 命令 `r2g --force-resize` 不能正常处理 RAW, NEF 等图片格式.
-
-### 填写图片信息
-
-添加一张或多张图片到一个或多个相册文件夹后, 在图库根目录执行命令
-`r2g -update` 给新增的图片生成同名 toml 文件.
-
-> 注意: `r2g -update` 只处理 gallery.toml 中的 albums 列表中的相册.
-
-- 请在 toml 文件里填写图片简介 (默认为图片文件名)
-- 相册简介采用纯文本格式, 第一行是相册标题
-- 如果有较长的描述, 可以写在 story 里, 采用 Markdown 格式
-
-填写信息后, 执行命令 `r2g render NAME` (其中 NAME 是相册文件夹名)
-或 `r2g render -all` 更新网页.
 
 ### 缩略图
 

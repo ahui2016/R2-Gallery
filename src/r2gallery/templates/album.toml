@@ -34,3 +34,4 @@ cover = '{{data.cover}}'
 checksum = '{{data.checksum}}'
 
 r2_html = '{{data.r2_html}}'
+
