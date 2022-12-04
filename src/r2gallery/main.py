@@ -63,17 +63,19 @@ def cli(ctx, info, update, force_resize):
 
     if update:
         gallery = get_gallery(ctx)
-        album_pics = util.get_all_album_pictures(gallery)
-        if util.check_all_double_names(album_pics) > 0:
+        albums_pics = util.get_all_albums_pictures(gallery)
+        if util.check_all_bad_names(albums_pics) > 0:
             ctx.exit()
-        util.update_all_albums(album_pics, gallery)
+        if util.check_all_double_names(albums_pics) > 0:
+            ctx.exit()
+        util.update_all_albums(albums_pics, gallery)
         ctx.exit()
 
     if force_resize:
         click.confirm("注意，强制缩小图片有可能覆盖原图，请先备份原图。确认执行吗？", abort=True)
         gallery = get_gallery(ctx)
-        album_pics = util.get_all_album_pictures(gallery)
-        util.resize_all_albums_pics(album_pics, gallery)
+        albums_pics = util.get_all_albums_pictures(gallery)
+        util.resize_all_albums_pics(albums_pics, gallery)
         ctx.exit()
 
     if ctx.invoked_subcommand is None:

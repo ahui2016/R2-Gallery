@@ -117,46 +117,65 @@ def create_album(name:str, gallery:Gallery):
     return None
 
 
-def update_all_albums(album_pics:dict, gallery:Gallery):
-    for album, pics in album_pics.items():
+def update_all_albums(albums_pics:dict, gallery:Gallery):
+    for album, pics in albums_pics.items():
         update_album(pics, Path(album), gallery)
 
 
-def resize_all_albums_pics(album_pics:dict, gallery:Gallery):
-    for pics in album_pics.values():
+def resize_all_albums_pics(albums_pics:dict, gallery:Gallery):
+    for pics in albums_pics.values():
         resize_oversize_pics(pics, gallery)
 
 
-def check_all_double_names(album_pics:dict):
+def check_all_double_names(albums_pics:dict):
     """
     :return: 零表示没有重复的文件名, 大于零表示有重复的文件名
     """
     albums = {}
-    for album, pics in album_pics.items():
+    for album, pics in albums_pics.items():
         names = get_double_names(pics)
         if names:
             albums[Path(album).name] = names
 
     if len(albums) > 0:
-        print_double_names(albums)
+        err = "请修改以下文件名, 使每个文件名都是唯一 (不分大小写, 不管后缀名)"
+        print_bad_names(albums, err)
 
     return len(albums)
 
 
-def print_double_names(albums:dict):
-    print("请修改以下文件名, 使每个文件名都是唯一 (不分大小写, 不管后缀名)")
+def check_all_bad_names(albums_pics:dict):
+    """
+    :return: 零表示没有不符合要求的文件名, 大于零表示有不符合要求的文件名
+    """
+    albums = {}
+    for album, pics in albums_pics.items():
+        names = get_bad_pic_names(pics)
+        if names:
+            albums[Path(album).name] = names
+
+    if len(albums) > 0:
+        err = "请修改以下文件名, 文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)" \
+              "\n注意：不能使用空格，请用下划线或短横线代替空格。\n"
+        print_bad_names(albums, err)
+
+    return len(albums)
+
+
+def print_bad_names(albums:dict, err:str):
+    print(err)
     for album_name, pic_names in albums.items():
         for pic_name in pic_names:
             print(f"{album_name}/{pic_name}")
 
 
-def get_all_album_pictures(gallery:Gallery):
+def get_all_albums_pictures(gallery:Gallery):
     """获取全部相册的全部图片的 Path"""
     albums = get_all_albums(gallery)
-    album_pics = {}
+    albums_pics = {}
     for album_path in albums:
-        album_pics[str(album_path)] = get_pic_files(album_path)
-    return album_pics
+        albums_pics[str(album_path)] = get_pic_files(album_path)
+    return albums_pics
 
 
 def get_pic_files(album_path:Path):
