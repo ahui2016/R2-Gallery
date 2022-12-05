@@ -118,14 +118,13 @@ def create_album(name:str, gallery:Gallery):
     return None
 
 
-def update_render_all(albums_pics:dict, gallery:Gallery):
-    err = update_all_albums(albums_pics, gallery)
-    if not err:
-        output_path = Output_Local_Path.joinpath(Index_HTML)
-        render_index_html("index_local_html", output_path, gallery)
+def render_all(gallery:Gallery):
+    output_path = Output_Local_Path.joinpath(Index_HTML)
+    render_index_html("index_local_html", output_path, gallery)
 
 
 def update_all_albums(albums_pics:dict, gallery:Gallery):
+    """返回 True 表示有错, 返回 False 表示无错."""
     for album, pics in albums_pics.items():
         if update_album(pics, Path(album), gallery):
             return True
@@ -135,6 +134,23 @@ def update_all_albums(albums_pics:dict, gallery:Gallery):
 def resize_all_albums_pics(albums_pics:dict, gallery:Gallery):
     for pics in albums_pics.values():
         resize_oversize_pics(pics, gallery)
+
+
+def check_all_albums_cover(albums_pics:dict):
+    """:return: err:str | None"""
+    for album_folder, pics in albums_pics.items():
+        album = Album.loads(Path(album_folder).joinpath(Album_Toml))
+        if not album.cover:
+            return f"每个相册都必须指定封面, 请向相册 {album.foldername} 添加图片。" \
+                   f"添加图片后执行 'r2g -update' 会自动指定封面。" \
+                   f"若想手动指定封面, 可修改 '{album.foldername}/album.toml' 中的 cover 项目。"
+
+        pics_name_list = [pic.name for pic in pics]
+        if album.cover not in pics_name_list:
+            return f"找不到封面图片: {album.cover}\n" \
+                   f"请修改 '{album.foldername}/album.toml' 中的 cover, " \
+                   f"确保 cover 指定的图片存在于相册文件夹 {album.foldername} 内。"
+    return None
 
 
 def check_all_double_names(albums_pics:dict):
@@ -420,13 +436,13 @@ def rename_pic(name:str, pic_path:Path):
     pass
 
 
-def print_err(err):
+def print_err(err:str):
     """如果有错误就打印, 没错误就忽略."""
     if err:
         print(f"Error: {err}", file=sys.stderr)
 
 
-def print_err_exist(ctx, err):
+def print_err_exist(ctx, err:str):
     """若有错误则打印并结束程序, 无错误则忽略."""
     if err:
         print(f"Error: {err}", file=sys.stderr)
