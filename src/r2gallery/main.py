@@ -68,7 +68,7 @@ def cli(ctx, info, update, force_resize):
             ctx.exit()
         if util.check_all_double_names(albums_pics) > 0:
             ctx.exit()
-        util.update_all_albums(albums_pics, gallery)
+        util.update_render_all(albums_pics, gallery)
         ctx.exit()
 
     if force_resize:

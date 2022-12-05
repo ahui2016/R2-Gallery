@@ -11,7 +11,7 @@ from . import model
 from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
     Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml, Metadata, Thumbs, \
     Dot_Toml, Picture_Toml, DateTime, DateTimeOriginal, MB, ImageDateTimeFormat, \
-    ImageWidth, ImageLength, Orientation
+    ImageWidth, ImageLength, Orientation, Index_Local_HTML, Index_HTML
 from .model import Gallery, Album, Picture
 
 """
@@ -27,9 +27,10 @@ jinja_env = jinja2.Environment(
 
 # 将templates 文件夹内除了 tmplfile 之外的全部文件都复制到 output 文件夹
 tmplfile = dict(
-    gallery_toml = Gallery_Toml,
-    album_toml   = Album_Toml,
-    picture_toml = Picture_Toml,
+    gallery_toml     = Gallery_Toml,
+    album_toml       = Album_Toml,
+    picture_toml     = Picture_Toml,
+    index_local_html = Index_Local_HTML,
 )
 
 
@@ -117,9 +118,18 @@ def create_album(name:str, gallery:Gallery):
     return None
 
 
+def update_render_all(albums_pics:dict, gallery:Gallery):
+    err = update_all_albums(albums_pics, gallery)
+    if not err:
+        output_path = Output_Local_Path.joinpath(Index_HTML)
+        render_index_html("index_local_html", output_path, gallery)
+
+
 def update_all_albums(albums_pics:dict, gallery:Gallery):
     for album, pics in albums_pics.items():
-        update_album(pics, Path(album), gallery)
+        if update_album(pics, Path(album), gallery):
+            return True
+    return False
 
 
 def resize_all_albums_pics(albums_pics:dict, gallery:Gallery):
@@ -197,11 +207,12 @@ def get_all_albums(gallery:Gallery):
     return albums
 
 
-def update_album(pics:list, album_path:Path, gallery:Gallery):
+def update_album(pics:list, album_path:Path, gallery:Gallery) -> bool:
+    """返回 True 表示有错, 返回 False 表示无错."""
     oversize_pics = get_oversize_pics(pics, gallery)
     if oversize_pics:
         print_oversize_pics(oversize_pics)
-        return
+        return True
 
     new_pics = []
     for pic in pics:
@@ -214,6 +225,7 @@ def update_album(pics:list, album_path:Path, gallery:Gallery):
             create_thumb_if_not_exists(img, pic, album_path, gallery)
 
     update_album_pictures(new_pics, album_path)
+    return False
 
 
 def update_album_pictures(new_pics:list, album_path:Path):
@@ -322,7 +334,7 @@ def create_pic_toml_if_not_exists(img:Image, pic_path:Path, album_path:Path):
 
 def create_thumb_if_not_exists(
         img:Image, pic_path:Path, album_path:Path, gallery:Gallery):
-    thumb_name = pic_path.with_suffix(gallery.thumb_suffix()).name
+    thumb_name = pic_path.with_suffix(gallery.thumb_suffix()).name.lower()
     thumb_path = album_path.joinpath(Thumbs, thumb_name)
     if not thumb_path.exists():
         create_thumb(img, thumb_path, gallery)
@@ -378,6 +390,30 @@ def open_image(file):
     except OSError:
         img = None
     return img
+
+
+def render_write_html(tmpl_name:str, output_path:Path, data:dict):
+    tmpl = jinja_env.get_template(tmplfile[tmpl_name])
+    html = tmpl.render(data)
+    print(f"render and write {output_path}")
+    output_path.write_text(html, encoding="utf-8")
+
+
+def render_index_html(
+        tmpl_name:str, output_path:Path, gallery:Gallery, force=False
+):
+    checksum = gallery.make_checksum()
+    if gallery.checksum != checksum:
+        gallery.checksum = checksum
+        render_gallery_toml(gallery)
+        force = True
+
+    if force:
+        render_write_html(tmpl_name, output_path, dict(
+            gallery=gallery.to_data(),
+            albums=gallery.get_albumdata(),
+            parent_dir="../"
+        ))
 
 
 def rename_pic(name:str, pic_path:Path):

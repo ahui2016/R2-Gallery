@@ -12,9 +12,13 @@ Picture_Toml = "picture.toml"
 Metadata     = "metadata"
 Thumbs       = "thumbs"
 
+Index_HTML       = "index.html"
+Index_Local_HTML = "index_local.html"
+Index_Web_HTML   = "index_web.html"
+
 Dot_Toml = ".toml"
+Dot_JPEG = ".jpeg"
 # Dot_Webp = ".webp"
-# Dot_Jpeg = ".jpeg"
 
 DateTimeOriginal = 36867
 DateTime         = 306

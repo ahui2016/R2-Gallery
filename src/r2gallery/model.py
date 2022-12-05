@@ -6,8 +6,9 @@ from pathlib import Path
 
 import arrow
 import tomli
+import mistune
 
-from .const import Gallery_Toml_Path, RFC3339
+from .const import Gallery_Toml_Path, RFC3339, Metadata, Dot_Toml, CWD, Album_Toml, Dot_JPEG
 
 Filename_Forbid_Pattern = re.compile(r"[^._0-9a-zA-Z\-]")
 """文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)。"""
@@ -70,7 +71,7 @@ class Picture:
         if ctime is None:
             ctime = now()
         file_id = file.stem.lower()
-        pic = Picture(
+        return Picture(
             file_id=file_id,
             notes=file_id,
             story="",
@@ -79,8 +80,6 @@ class Picture:
             r2_url="",
             r2_html="",
         )
-        pic.update_checksum()
-        return pic
 
     @classmethod
     def loads(cls, toml_path:Path):
@@ -91,12 +90,30 @@ class Picture:
         pic.story = pic.story.strip()
         return pic
 
-    def update_checksum(self):
-        """当 notes, story, ctime 的内容有变化时, 更新 checksum."""
+    def make_checksum(self):
         text = self.notes + self.story + self.ctime
-        checksum = text_checksum(text)
-        if checksum != self.checksum:
-            self.checksum = checksum
+        return text_checksum(text)
+
+    def title(self):
+        pic_title, _, err = split_notes(self.notes)
+        if err:
+            pic_title = err
+        return pic_title
+
+
+@dataclass
+class AlbumData:
+    """用于生成前端 HTML"""
+    name         : str  # 相当于 Album.foldername
+    author       : str  # 相当于 Album.author
+    title        : str  # 提取自 Album.notes 的第一行
+    notes        : str  # 提取自 Album.notes (不含第一行)
+    story        : str  # Album.story 转换为 HTML
+    sort_by      : str  # 相当于 Album.sort_by
+    cover_thumb  : str  # Album.cover 的缩略图文件名
+    cover_title  : str  # 提取自 Album.cover 的 notes
+    cover_r2_url : str  # Album.cover 的 R2 url
+    r2_url       : str  # 相当于 Album.r2_html
 
 
 @dataclass
@@ -113,7 +130,7 @@ class Album:
 
     @classmethod
     def default(cls, foldername):
-        album = Album(
+        return Album(
             foldername=foldername,
             author="",
             notes=foldername,
@@ -124,8 +141,6 @@ class Album:
             checksum="",
             r2_html=""
         )
-        album.update_checksum()
-        return album
 
     @classmethod
     def loads(cls, toml_path:Path):
@@ -137,14 +152,40 @@ class Album:
         album.sort_by = sort_by_from(album.sort_by).name
         return album
 
-    def update_checksum(self):
-        """当 author, notes, story, sort_by, pictures, cover
-        的内容有变化时, 更新 checksum."""
+    def make_checksum(self):
         pictures = ''.join(self.pictures)
         text = self.author + self.notes + self.story + self.sort_by + pictures + self.cover
-        checksum = text_checksum(text)
-        if checksum != self.checksum:
-            self.checksum = checksum
+        return text_checksum(text)
+
+    def to_data(self, album_path:Path) -> AlbumData:
+        title, notes, err = split_notes(self.notes)
+        if err:
+            title = err
+        toml_name = Path(self.cover).with_suffix(Dot_Toml).name
+        toml_path = album_path.joinpath(Metadata, toml_name)
+        cover = Picture.loads(toml_path)
+        return AlbumData(
+            name=self.foldername,
+            author=self.author,
+            title=title,
+            notes=notes,
+            story=mistune.html(self.story),
+            sort_by=self.sort_by,
+            cover_thumb=cover.file_id+Dot_JPEG,
+            cover_title=cover.title(),
+            cover_r2_url="",
+            r2_url="",
+        )
+
+
+@dataclass
+class GalleryData:
+    author       : str  # 相当于 Gallery.author
+    title        : str  # 提取自 Gallery.notes 的第一行
+    notes        : str  # 提取自 Gallery.notes (不含第一行)
+    story        : str  # Gallery.story 转换为 HTML
+    frontpage    : str  # 相当于 Gallery.frontpage
+    r2_url       : str  # 相当于 Gallery.r2_html
 
 
 @dataclass
@@ -172,7 +213,7 @@ class Gallery:
     @classmethod
     def default(cls, title:str):
         author = "佚名"
-        gallery = Gallery(
+        return Gallery(
             author=author,
             notes=title,
             story="",
@@ -184,15 +225,13 @@ class Gallery:
             image_height_max=1000,
             image_size_max=2,
             image_output_format=ImageFormat.JPEG.name,
-            thumb_size=256,
+            thumb_size=128,
             endpoint_url='https://<accountid>.r2.cloudflarestorage.com',
             aws_access_key_id = '<access_key_id>',
             aws_secret_access_key = '<access_key_secret>',
             bucket_name = '<bucket_name>',
             bucket_url = '<bucket_url>',
         )
-        gallery.update_checksum()
-        return gallery
 
     @classmethod
     def loads(cls):
@@ -204,24 +243,33 @@ class Gallery:
         gallery.frontpage = gallery.frontpage.capitalize()
         return gallery
 
+    def to_data(self) -> GalleryData:
+        title, notes, err = split_notes(self.notes)
+        if err:
+            title = err
+        return GalleryData(
+            author=self.author,
+            title=title,
+            notes=notes,
+            story=mistune.html(self.story),
+            frontpage=self.frontpage,
+            r2_url="",
+        )
+
     def title(self):
         """
         :return: (result, err)
         """
-        return get_title(self.notes)
+        gallery_title, _, err = split_notes(self.notes)
+        return gallery_title, err
 
-    def update_checksum(self):
-        """当 author, notes, story, frontpage, albums
-        的内容有变化时, 更新 checksum."""
+    def make_checksum(self):
         albums = ''.join(self.albums)
         text = self.author + self.notes + self.story + self.frontpage + albums
-        checksum = text_checksum(text)
-        if checksum != self.checksum:
-            self.checksum = checksum
+        return text_checksum(text)
 
     def add_album(self, album_name:str):
         self.albums.insert(0, album_name)
-        self.update_checksum()
 
     def thumbnail_size(self):
         """用于 PIL.Image.thumbnail(size)"""
@@ -229,6 +277,15 @@ class Gallery:
 
     def thumb_suffix(self):
         return f".{self.image_output_format.lower()}"
+
+    def get_albumdata(self):
+        albums = []
+        for album_name in self.albums:
+            album_path = CWD.joinpath(album_name)
+            album_toml_path = album_path.joinpath(Album_Toml)
+            album = Album.loads(album_toml_path)
+            albums.append(album.to_data(album_path))
+        return albums
 
 
 def text_checksum(text:str) -> str:
@@ -246,27 +303,29 @@ def tomli_loads(file) -> dict:
         return tomli.loads(text)
 
 
-def get_title(text:str):
+def split_notes(text:str) -> (str, str, str|None):
     """
-    :return: (result, err)
+    :return: (标题, 简介, 错误)
     """
-    line = get_first_line(text)
-    if not line:
-        return None, "必须填写简介(标题)"
-    if len(line) >= Title_Limit:
-        return line[:Title_Limit], None
-    return line, None
+    title, notes = split_first_line(text)
+    err = None
+    if not title:
+        err = "必须填写 notes"
+    return title, notes, err
 
 
-def get_first_line(text:str):
-    """
-    :return: str, 注意有可能返回空字符串。
-    """
-    for line in text.splitlines():
-        line = line.strip()
-        if line:
-            return line
-    return ""
+def split_first_line(text:str) -> (str, str):
+    """将 text 分成两部分, 第一部分是第一行, 其余是第二部分.
+    其中第一行还有长度限制.
+
+    注意, 有可能返回空字符串."""
+    parts = text.split("\n", maxsplit=1)
+    if len(parts) < 2:
+        parts.append("")
+    head, tail = parts[0], parts[1].strip()
+    if len(head) > Title_Limit:
+        head = head[:Title_Limit]
+    return head, tail
 
 
 def check_filename(name: str):
