@@ -21,7 +21,7 @@ frontpage = '{{data.frontpage}}'
 # 可修改
 albums = [
 {% for album in data.albums %}
-    '''{{album}}''',
+    '{{album}}',
 {%- endfor %}
 ]
 

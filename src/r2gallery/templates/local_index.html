@@ -11,7 +11,7 @@
 
 <ul>
   {% for album in albums %}
-  <li>{{ album.title }}
+  <li>{{ album.title }}<br />
     <a href="{{album.name}}/index.html">
       <img src="{{parent_dir}}{{album.name}}/thumbs/{{album.cover_thumb}}" alt="{{album.cover_title}}" />
     </a>

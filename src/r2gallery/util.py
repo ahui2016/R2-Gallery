@@ -1,18 +1,14 @@
 import os
 import shutil
 import sys
-from pathlib import Path
 
 import arrow
 import jinja2
 from PIL import Image, ImageOps
 
 from . import model
-from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
-    Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml, Metadata, Thumbs, \
-    Dot_Toml, Picture_Toml, DateTime, DateTimeOriginal, MB, ImageDateTimeFormat, \
-    ImageWidth, ImageLength, Orientation, Local_Index_HTML, Index_HTML
-from .model import Gallery, Album, Picture, PictureData
+from .const import *
+from .model import Gallery, Album, Picture, PictureData, AlbumData
 
 """
 【关于返回值】
@@ -27,10 +23,11 @@ jinja_env = jinja2.Environment(
 
 # 将templates 文件夹内除了 tmplfile 之外的全部文件都复制到 output 文件夹
 tmplfile = dict(
-    gallery_toml     = Gallery_Toml,
-    album_toml       = Album_Toml,
-    picture_toml     = Picture_Toml,
-    local_index_html = Local_Index_HTML,
+    gallery_toml           = Gallery_Toml,
+    album_toml             = Album_Toml,
+    picture_toml           = Picture_Toml,
+    local_index_html       = Local_Index_HTML,
+    local_album_index_html = Local_Album_Index_HTML,
 )
 
 
@@ -119,9 +116,12 @@ def create_album(name:str, gallery:Gallery):
     return None
 
 
-def render_all(gallery:Gallery):
+def render_all(albums_pics:dict, gallery:Gallery, force=False):
     output_path = Output_Local_Path.joinpath(Index_HTML)
-    render_index_html("local_index_html", output_path, gallery)
+    update_gallery = render_all_albums(albums_pics, gallery)
+    if not force:
+        force = update_gallery
+    render_index_html("local_index_html", output_path, gallery, force)
 
 
 def update_all_albums(albums_pics:dict, gallery:Gallery):
@@ -136,20 +136,26 @@ def render_all_albums(
         albums_pics:dict,
         gallery:Gallery,
         force=False
-):
+) -> bool:
+    """:return: True 表示需要重新渲染 gallery 首页."""
+    update_gallery = False
     for album_folder, pics in albums_pics.items():
-        album = Album.loads(Path(album_folder).joinpath(Album_Toml))
+        album_path = Path(album_folder)
+        album = Album.loads(album_path.joinpath(Album_Toml))
+        album_data = album.to_data(album_path)
         output_local_folder = Output_Local_Path.joinpath(album.foldername)
         output_local_folder.mkdir(exist_ok=True)
         output_local_path = output_local_folder.joinpath(Index_HTML)
-        render_album_index_html(
-            "local_album_index",
+        update_gallery = render_album_index_html(
+            "local_album_index_html",
             output_local_path,
             gallery,
             album,
+            album_data,
             pics,
             force=force,
         )
+    return update_gallery
 
 
 def resize_all_albums_pics(albums_pics:dict, gallery:Gallery):
@@ -468,24 +474,30 @@ def render_album_index_html(
         output_path:Path,
         gallery:Gallery,
         album:Album,
+        album_data:AlbumData,
         pic_paths:list[Path],
         force=False
-):
+) -> bool:
+    """:return: True 表示需要重新渲染 gallery 首页."""
+    update_gallery = False
     checksum = album.make_checksum()
     if album.checksum != checksum:
         album.checksum = checksum
         render_album_toml(album)
         force = True
+        update_gallery = True
 
     if force:
         pictures = pic_paths_to_pic_data(pic_paths)
         render_write_html(tmpl_name, output_path, dict(
             gallery=gallery.to_data(),
-            album=album,
+            album=album_data,
             pictures=pictures,
             albums=gallery.get_albumdata(),
             parent_dir="../../"
         ))
+
+    return update_gallery
 
 
 def rename_pic(name:str, pic_path:Path):

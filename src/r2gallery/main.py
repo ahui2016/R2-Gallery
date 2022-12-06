@@ -74,7 +74,7 @@ def cli(ctx, info, update, force_resize):
         err = util.check_all_albums_cover(albums_pics)
         print_err_exist(ctx, err)
 
-        util.render_all(gallery)
+        util.render_all(albums_pics, gallery)
         ctx.exit()
 
     if force_resize:

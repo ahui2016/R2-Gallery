@@ -12,9 +12,10 @@ Picture_Toml = "picture.toml"
 Metadata     = "metadata"
 Thumbs       = "thumbs"
 
-Index_HTML       = "index.html"
-Local_Index_HTML = "local_index.html"
-Web_Index_HTML   = "web_index.html"
+Index_HTML             = "index.html"
+Local_Index_HTML       = "local_index.html"
+Local_Album_Index_HTML = "local_album_index.html"
+Web_Index_HTML         = "web_index.html"
 
 Dot_Toml = ".toml"
 Dot_JPEG = ".jpeg"

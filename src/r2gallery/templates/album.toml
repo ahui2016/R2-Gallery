@@ -24,7 +24,7 @@ sort_by = '{{data.sort_by}}'
 # 可修改
 pictures = [
 {% for pic in data.pictures %}
-    '''{{pic}}''',
+    '{{pic}}',
 {%- endfor %}
 ]
 
