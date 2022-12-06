@@ -13,8 +13,8 @@ Metadata     = "metadata"
 Thumbs       = "thumbs"
 
 Index_HTML       = "index.html"
-Index_Local_HTML = "index_local.html"
-Index_Web_HTML   = "index_web.html"
+Local_Index_HTML = "local_index.html"
+Web_Index_HTML   = "web_index.html"
 
 Dot_Toml = ".toml"
 Dot_JPEG = ".jpeg"

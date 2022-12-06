@@ -11,8 +11,8 @@ from . import model
 from .const import CWD, Templates_Path, Output_Local_Path, Output_Web_Path, \
     Gallery_Toml, Gallery_Toml_Path, Templates, Album_Toml, Metadata, Thumbs, \
     Dot_Toml, Picture_Toml, DateTime, DateTimeOriginal, MB, ImageDateTimeFormat, \
-    ImageWidth, ImageLength, Orientation, Index_Local_HTML, Index_HTML
-from .model import Gallery, Album, Picture
+    ImageWidth, ImageLength, Orientation, Local_Index_HTML, Index_HTML
+from .model import Gallery, Album, Picture, PictureData
 
 """
 【关于返回值】
@@ -30,7 +30,7 @@ tmplfile = dict(
     gallery_toml     = Gallery_Toml,
     album_toml       = Album_Toml,
     picture_toml     = Picture_Toml,
-    index_local_html = Index_Local_HTML,
+    local_index_html = Local_Index_HTML,
 )
 
 
@@ -45,7 +45,8 @@ def render_gallery_toml(gallery:Gallery):
     render_toml('gallery_toml', Gallery_Toml_Path, gallery)
 
 
-def render_album_toml(toml_path:Path, album:Album):
+def render_album_toml(album:Album):
+    toml_path = CWD.joinpath(album.foldername, Album_Toml)
     render_toml('album_toml', toml_path, album)
 
 
@@ -110,7 +111,7 @@ def create_album(name:str, gallery:Gallery):
     thumbs_path = album_path.joinpath(Thumbs)
     thumbs_path.mkdir()
     metadata_path.mkdir()
-    render_album_toml(album_toml_path, Album.default(name))
+    render_album_toml(Album.default(name))
     gallery.add_album(name)
     render_gallery_toml(gallery)
     print("相册创建成功。")
@@ -120,7 +121,7 @@ def create_album(name:str, gallery:Gallery):
 
 def render_all(gallery:Gallery):
     output_path = Output_Local_Path.joinpath(Index_HTML)
-    render_index_html("index_local_html", output_path, gallery)
+    render_index_html("local_index_html", output_path, gallery)
 
 
 def update_all_albums(albums_pics:dict, gallery:Gallery):
@@ -129,6 +130,26 @@ def update_all_albums(albums_pics:dict, gallery:Gallery):
         if update_album(pics, Path(album), gallery):
             return True
     return False
+
+
+def render_all_albums(
+        albums_pics:dict,
+        gallery:Gallery,
+        force=False
+):
+    for album_folder, pics in albums_pics.items():
+        album = Album.loads(Path(album_folder).joinpath(Album_Toml))
+        output_local_folder = Output_Local_Path.joinpath(album.foldername)
+        output_local_folder.mkdir(exist_ok=True)
+        output_local_path = output_local_folder.joinpath(Index_HTML)
+        render_album_index_html(
+            "local_album_index",
+            output_local_path,
+            gallery,
+            album,
+            pics,
+            force=force,
+        )
 
 
 def resize_all_albums_pics(albums_pics:dict, gallery:Gallery):
@@ -195,6 +216,16 @@ def print_bad_names(albums:dict, err:str):
             print(f"{album_name}/{pic_name}")
 
 
+def pic_paths_to_pic_data(pic_paths:list[Path]) -> list[PictureData]:
+    pic_data_list = []
+    for pic_path in pic_paths:
+        toml_name = pic_path.with_suffix(Dot_Toml).name.lower()
+        toml_path = pic_path.parent.joinpath(Metadata, toml_name)
+        pic_data = Picture.loads(toml_path).to_data(pic_path.name)
+        pic_data_list.append(pic_data)
+    return pic_data_list
+
+
 def get_all_albums_pictures(gallery:Gallery):
     """获取全部相册的全部图片的 Path"""
     albums = get_all_albums(gallery)
@@ -252,7 +283,7 @@ def update_album_pictures(new_pics:list, album_path:Path):
     album.pictures = new_pics + album.pictures
     if not album.cover:
         album.cover = new_pics[0]
-    render_album_toml(album_toml_path, album)
+    render_album_toml(album)
 
 
 def get_double_names(pics:list) -> list[str]:
@@ -429,6 +460,31 @@ def render_index_html(
             gallery=gallery.to_data(),
             albums=gallery.get_albumdata(),
             parent_dir="../"
+        ))
+
+
+def render_album_index_html(
+        tmpl_name:str,
+        output_path:Path,
+        gallery:Gallery,
+        album:Album,
+        pic_paths:list[Path],
+        force=False
+):
+    checksum = album.make_checksum()
+    if album.checksum != checksum:
+        album.checksum = checksum
+        render_album_toml(album)
+        force = True
+
+    if force:
+        pictures = pic_paths_to_pic_data(pic_paths)
+        render_write_html(tmpl_name, output_path, dict(
+            gallery=gallery.to_data(),
+            album=album,
+            pictures=pictures,
+            albums=gallery.get_albumdata(),
+            parent_dir="../../"
         ))
 
 

@@ -1,0 +1,35 @@
+{% extends "local_base.html" %}
+
+{% block title %}
+<title>{{ album.title }} - {{ gallery.title }}</title>
+{% endblock %}
+
+{% block main %}
+<header>
+  <h1>{{ album.title }} - {{ gallery.title }}</h1>
+</header>
+
+<p>{{ album.notes }}</p>
+
+{{ album.story|safe }}
+
+<ul>
+  {% for pic in pictures %}
+  <li>{{ pic.title }}
+    <a href="{{parent_dir}}{{album.name}}/{{pic.file_id}}.html">
+      <img src="{{parent_dir}}{{album.name}}/thumbs/{{pic.file_id}}.jpeg" alt="{{pic.title}}" />
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+
+{% endblock %}
+
+{% block footer %}
+<div id="footer" class="index-footer">
+  <p id="footer-body">
+    Author: {{ gallery.author }}
+    | LICENSE <a href="LICENSE.txt">CC0-1.0</a>
+  </p>
+</div>
+{% endblock %}

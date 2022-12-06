@@ -57,6 +57,18 @@ def now():
 
 
 @dataclass
+class PictureData:
+    """用于生成前端 HTML"""
+    file_id      : str  # 相当于 Picture.file_id
+    filename     : str  # 图片文件名, 包括后缀, 不包括文件夹
+    title        : str  # 提取自 Picture.notes 的第一行
+    notes        : str  # 提取自 Picture.notes (不含第一行)
+    story        : str  # Picture.story 转换为 HTML
+    ctime        : str  # 相当于 Picture.ctime
+    r2_url       : str  # 相当于 Picture.r2_html
+
+
+@dataclass
 class Picture:
     file_id  : str  # 文件名作为 id (不含后缀名, 转小写)
     notes    : str  # 简单描述 (纯文本格式, 第一行是图片标题)
@@ -99,6 +111,21 @@ class Picture:
         if err:
             pic_title = err
         return pic_title
+
+    def to_data(self, pic_name:str) -> PictureData:
+        """pic_name 是图片文件名, 包括后缀, 不包括文件夹."""
+        title, notes, err = split_notes(self.notes)
+        if err:
+            title = err
+        return PictureData(
+            file_id=self.file_id,
+            filename=pic_name,
+            title=title,
+            notes=notes,
+            story=mistune.html(self.story),
+            ctime=self.ctime,
+            r2_url="",
+        )
 
 
 @dataclass
