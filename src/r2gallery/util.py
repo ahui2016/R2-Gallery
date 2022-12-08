@@ -8,7 +8,7 @@ from PIL import Image, ImageOps
 
 from . import model
 from .const import *
-from .model import Gallery, Album, Picture, PictureData, AlbumData, SortBy
+from .model import Gallery, Album, Picture, PictureData, AlbumData, SortBy, GalleryData
 
 """
 【关于返回值】
@@ -150,6 +150,12 @@ def render_all_albums(
         local_album_index_html = local_album_folder.joinpath(Index_HTML)
         local_pics_js = local_album_folder.joinpath(Local_Pics_JS)
         pics_sorted = sort_pics(pics, album, album_path)
+
+        # 渲染相册内的图片
+        pics_data_list = render_album_pics(
+            pics_sorted, album_path, album_data, gallery.to_data())
+
+        # 渲染相册索引页
         update_gallery = render_album_index_html(
             "local_album_index_html",
             "local_pics_js",
@@ -158,7 +164,7 @@ def render_all_albums(
             gallery,
             album,
             album_data,
-            pics_sorted,
+            pics_data_list,
             force=force,
         )
     return update_gallery
@@ -503,7 +509,7 @@ def render_album_index_html(
         gallery:Gallery,
         album:Album,
         album_data:AlbumData,
-        pic_paths:list[Path],
+        pics_data_list:list[PictureData],
         force=False
 ) -> bool:
     """:return: True 表示需要重新渲染 gallery 首页."""
@@ -516,20 +522,64 @@ def render_album_index_html(
         update_gallery = True
 
     if force:
-        pictures = pic_paths_to_pic_data(pic_paths)
+        gallery_data = gallery.to_data()
         render_write(tmpl_name, output_path, dict(
-            gallery=gallery.to_data(),
+            gallery=gallery_data,
             album=album_data,
-            pictures=pictures,
+            pictures=pics_data_list,
             albums=gallery.get_albumdata(),
             parent_dir="../../"
         ))
-        pics_id_list = [pic.stem.lower() for pic in pic_paths]
+        pics_id_list = [pic.file_id for pic in pics_data_list]
         render_write(js_tmpl_name, js_output_path, dict(
             pics=pics_id_list
         ))
 
     return update_gallery
+
+
+def render_album_pics(
+        pics_paths:list[Path],
+        album_folder:Path,
+        album:AlbumData,
+        gallery:GalleryData,
+        force=False
+) -> list[PictureData]:
+    """返回 PictureData 有用."""
+    pic_data_list = []
+    for pic_path in pics_paths:
+        pic_data_list = render_pic_html(
+            pic_path, album_folder, album, gallery, force)
+    return pic_data_list
+
+
+def render_pic_html(
+        pic_path:Path,
+        album_folder:Path,
+        album:AlbumData,
+        gallery:GalleryData,
+        force=False
+) -> PictureData:
+    """返回 PictureData 有用."""
+    pic_toml_path = get_pic_toml_path(pic_path)
+    pic = Picture.loads(pic_toml_path)
+    pic_data = pic.to_data(pic_path.name)
+    checksum = pic.make_checksum()
+    if pic.checksum != checksum:
+        pic.checksum = checksum
+        render_picture_toml(pic_toml_path, pic)
+        force = True
+
+    if force:
+        output_path = album_folder.joinpath(pic_path.name)
+        render_write("local_pic_html", output_path, dict(
+            pic=pic_data,
+            album=album,
+            gallery=gallery,
+            parent_dir="../../"
+        ))
+
+    return pic_data
 
 
 def rename_pic(name:str, pic_path:Path):
