@@ -15,6 +15,8 @@ Thumbs       = "thumbs"
 Index_HTML             = "index.html"
 Local_Index_HTML       = "local_index.html"
 Local_Album_Index_HTML = "local_album_index.html"
+Local_Pic_HTML         = "local_pic.html"
+Local_Pics_JS          = "local_pics.js"
 Web_Index_HTML         = "web_index.html"
 
 Dot_Toml = ".toml"

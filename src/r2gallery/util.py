@@ -8,7 +8,7 @@ from PIL import Image, ImageOps
 
 from . import model
 from .const import *
-from .model import Gallery, Album, Picture, PictureData, AlbumData
+from .model import Gallery, Album, Picture, PictureData, AlbumData, SortBy
 
 """
 【关于返回值】
@@ -28,27 +28,29 @@ tmplfile = dict(
     picture_toml           = Picture_Toml,
     local_index_html       = Local_Index_HTML,
     local_album_index_html = Local_Album_Index_HTML,
+    local_pic_html         = Local_Pic_HTML,
+    local_pics_js          = Local_Pics_JS,
 )
 
 
-def render_toml(tmpl_name:str, toml_path:Path, data):
+def render_write(tmpl_name:str, output_path:Path, data:dict):
     tmpl = jinja_env.get_template(tmplfile[tmpl_name])
-    rendered = tmpl.render(dict(data=data))
-    print(f"render and write {toml_path}")
-    toml_path.write_text(rendered, encoding="utf-8")
+    rendered = tmpl.render(data)
+    print(f"render and write {output_path}")
+    output_path.write_text(rendered, encoding="utf-8")
 
 
 def render_gallery_toml(gallery:Gallery):
-    render_toml('gallery_toml', Gallery_Toml_Path, gallery)
+    render_write('gallery_toml', Gallery_Toml_Path, dict(data=gallery))
 
 
 def render_album_toml(album:Album):
     toml_path = CWD.joinpath(album.foldername, Album_Toml)
-    render_toml('album_toml', toml_path, album)
+    render_write('album_toml', toml_path, dict(data=album))
 
 
 def render_picture_toml(toml_path:Path, pic:Picture):
-    render_toml('picture_toml', toml_path, pic)
+    render_write('picture_toml', toml_path, dict(data=pic))
 
 
 def folder_not_empty(folder):
@@ -143,19 +145,46 @@ def render_all_albums(
         album_path = Path(album_folder)
         album = Album.loads(album_path.joinpath(Album_Toml))
         album_data = album.to_data(album_path)
-        output_local_folder = Output_Local_Path.joinpath(album.foldername)
-        output_local_folder.mkdir(exist_ok=True)
-        output_local_path = output_local_folder.joinpath(Index_HTML)
+        local_album_folder = Output_Local_Path.joinpath(album.foldername)
+        local_album_folder.mkdir(exist_ok=True)
+        local_album_index_html = local_album_folder.joinpath(Index_HTML)
+        local_pics_js = local_album_folder.joinpath(Local_Pics_JS)
+        pics_sorted = sort_pics(pics, album, album_path)
         update_gallery = render_album_index_html(
             "local_album_index_html",
-            output_local_path,
+            "local_pics_js",
+            local_album_index_html,
+            local_pics_js,
             gallery,
             album,
             album_data,
-            pics,
+            pics_sorted,
             force=force,
         )
     return update_gallery
+
+
+def sort_pics(pics_paths:list[Path], album:Album, album_path:Path) -> list[Path]:
+    sort_by = SortBy[album.sort_by]
+    if sort_by is SortBy.List:
+        return [album_path.joinpath(filename) for filename in album.pictures]
+
+    pairs = pics_with_ctime(pics_paths)
+    if sort_by is SortBy.CTimeDesc:
+        pairs = sorted(pairs, key=lambda pair: pair[1], reverse=True)
+    else:
+        pairs = sorted(pairs, key=lambda pair: pair[1])
+
+    return [pair[0] for pair in pairs]
+
+
+def pics_with_ctime(pics_paths:list):
+    """:return: (pic_path, ctime)"""
+    pairs = []
+    for pic_path in pics_paths:
+        pic = Picture.loads(get_pic_toml_path(pic_path))
+        pairs.append((pic_path, pic.ctime))
+    return pairs
 
 
 def resize_all_albums_pics(albums_pics:dict, gallery:Gallery):
@@ -225,8 +254,7 @@ def print_bad_names(albums:dict, err:str):
 def pic_paths_to_pic_data(pic_paths:list[Path]) -> list[PictureData]:
     pic_data_list = []
     for pic_path in pic_paths:
-        toml_name = pic_path.with_suffix(Dot_Toml).name.lower()
-        toml_path = pic_path.parent.joinpath(Metadata, toml_name)
+        toml_path = get_pic_toml_path(pic_path)
         pic_data = Picture.loads(toml_path).to_data(pic_path.name)
         pic_data_list.append(pic_data)
     return pic_data_list
@@ -273,7 +301,7 @@ def update_album(pics:list, album_path:Path, gallery:Gallery) -> bool:
         if img is None:
             print(f"Not Image: {pic.name}")
         else:
-            if create_pic_toml_if_not_exists(img, pic, album_path):
+            if create_pic_toml_if_not_exists(img, pic):
                 new_pics.append(pic.name)
             create_thumb_if_not_exists(img, pic, album_path, gallery)
 
@@ -282,6 +310,7 @@ def update_album(pics:list, album_path:Path, gallery:Gallery) -> bool:
 
 
 def update_album_pictures(new_pics:list, album_path:Path):
+    """添加图片到相册. TODO: 删除图片."""
     if not new_pics:
         return
     album_toml_path = album_path.joinpath(Album_Toml)
@@ -372,12 +401,16 @@ def get_image_datetime(img:Image):
     return model.now()
 
 
-def create_pic_toml_if_not_exists(img:Image, pic_path:Path, album_path:Path):
+def get_pic_toml_path(pic_path:Path) -> Path:
+    pic_toml_name = pic_path.with_suffix(Dot_Toml).name.lower()
+    return pic_path.parent.joinpath(Metadata, pic_toml_name)
+
+
+def create_pic_toml_if_not_exists(img:Image, pic_path:Path):
     """
     :return: True 表示这是新图片, 否则返回 False
     """
-    pic_toml_name = pic_path.with_suffix(Dot_Toml).name
-    pic_toml_path = album_path.joinpath(Metadata, pic_toml_name)
+    pic_toml_path = get_pic_toml_path(pic_path)
     if not pic_toml_path.exists():
         pic = Picture.default(pic_path, get_image_datetime(img))
         render_picture_toml(pic_toml_path, pic)
@@ -445,13 +478,6 @@ def open_image(file):
     return img
 
 
-def render_write_html(tmpl_name:str, output_path:Path, data:dict):
-    tmpl = jinja_env.get_template(tmplfile[tmpl_name])
-    html = tmpl.render(data)
-    print(f"render and write {output_path}")
-    output_path.write_text(html, encoding="utf-8")
-
-
 def render_index_html(
         tmpl_name:str, output_path:Path, gallery:Gallery, force=False
 ):
@@ -462,7 +488,7 @@ def render_index_html(
         force = True
 
     if force:
-        render_write_html(tmpl_name, output_path, dict(
+        render_write(tmpl_name, output_path, dict(
             gallery=gallery.to_data(),
             albums=gallery.get_albumdata(),
             parent_dir="../"
@@ -471,7 +497,9 @@ def render_index_html(
 
 def render_album_index_html(
         tmpl_name:str,
+        js_tmpl_name:str,
         output_path:Path,
+        js_output_path:Path,
         gallery:Gallery,
         album:Album,
         album_data:AlbumData,
@@ -489,12 +517,16 @@ def render_album_index_html(
 
     if force:
         pictures = pic_paths_to_pic_data(pic_paths)
-        render_write_html(tmpl_name, output_path, dict(
+        render_write(tmpl_name, output_path, dict(
             gallery=gallery.to_data(),
             album=album_data,
             pictures=pictures,
             albums=gallery.get_albumdata(),
             parent_dir="../../"
+        ))
+        pics_id_list = [pic.stem.lower() for pic in pic_paths]
+        render_write(js_tmpl_name, js_output_path, dict(
+            pics=pics_id_list
         ))
 
     return update_gallery

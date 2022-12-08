@@ -107,16 +107,13 @@ class Picture:
         return text_checksum(text)
 
     def title(self):
-        pic_title, _, err = split_notes(self.notes)
-        if err:
-            pic_title = err
+        """图片允许没有标题/简介"""
+        pic_title, _, _ = split_notes(self.notes)
         return pic_title
 
     def to_data(self, pic_name:str) -> PictureData:
         """pic_name 是图片文件名, 包括后缀, 不包括文件夹."""
-        title, notes, err = split_notes(self.notes)
-        if err:
-            title = err
+        title, notes, _ = split_notes(self.notes)
         return PictureData(
             file_id=self.file_id,
             filename=pic_name,
@@ -187,7 +184,7 @@ class Album:
     def to_data(self, album_path:Path) -> AlbumData:
         title, notes, err = split_notes(self.notes)
         if err:
-            title = err
+            title = self.foldername
         toml_name = Path(self.cover).with_suffix(Dot_Toml).name
         toml_path = album_path.joinpath(Metadata, toml_name)
         cover = Picture.loads(toml_path)
@@ -337,7 +334,7 @@ def split_notes(text:str) -> (str, str, str|None):
     title, notes = split_first_line(text)
     err = None
     if not title:
-        err = "必须填写 notes"
+        err = "未填写notes"
     return title, notes, err
 
 
