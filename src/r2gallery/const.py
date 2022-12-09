@@ -11,6 +11,8 @@ Album_Toml   = "album.toml"
 Picture_Toml = "picture.toml"
 Metadata     = "metadata"
 Thumbs       = "thumbs"
+Use_Proxy    = "use_proxy"
+Http_Proxy   = "http_proxy"
 
 Index_HTML             = "index.html"
 Local_Index_HTML       = "local_index.html"

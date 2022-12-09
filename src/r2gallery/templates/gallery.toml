@@ -35,6 +35,9 @@ image_size_max = {{data.image_size_max}}
 
 # 以下全部项目均可修改
 
+use_proxy = false
+http_proxy = "http://127.0.0.1:1081"
+
 image_width_max = {{data.image_width_max}}
 image_height_max = {{data.image_height_max}}
 thumb_size = {{data.thumb_size}}

@@ -243,8 +243,10 @@ def check_all_bad_names(albums_pics:dict):
             albums[Path(album).name] = names
 
     if len(albums) > 0:
-        err = "请修改以下文件名, 文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)" \
-              "\n注意：不能使用空格，请用下划线或短横线代替空格。\n"
+        err = "请修改以下文件名, \n" \
+              "文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)\n" \
+              "不能使用空格，请用下划线或短横线代替空格。\n" \
+              "并且不可使用 'index' 作为文件名。\n"
         print_bad_names(albums, err)
 
     return len(albums)
@@ -347,10 +349,13 @@ def get_double_names(pics:list) -> list[str]:
     return names
 
 
-def get_bad_pic_names(files:list) -> list[str]:
+def get_bad_pic_names(files:list[Path]) -> list[str]:
     """找出相册内不符合要求的图片文件名"""
+    bad_id_list = ["index"]
     bad_names = []
     for file in files:
+        if file.stem.lower() in bad_id_list:
+            bad_names.append(file.name)
         if model.check_filename(file.name):
             bad_names.append(file.name)
     return bad_names
@@ -585,6 +590,19 @@ def render_pic_html(
 
 def rename_pic(name:str, pic_path:Path):
     pass
+
+
+def set_use_proxy(sw:str, gallery:Gallery):
+    use_proxy = False
+    if sw.lower() in ["1", "on", "true"]:
+        use_proxy = True
+
+    gallery.use_proxy = use_proxy
+    render_gallery_toml(gallery)
+    print(f"设置成功\nuse proxy = {use_proxy}\nhttp proxy = {gallery.http_proxy}")
+
+    if not gallery.http_proxy and use_proxy:
+        print(f"未设置 proxy, 请用文本编辑器打开 {Gallery_Toml_Path} 填写 http proxy")
 
 
 def print_err(err:str):

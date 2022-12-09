@@ -220,6 +220,8 @@ class Gallery:
     frontpage : str   # 可选择 Frontpage 里的三种展示方式
     albums    : list  # 相册列表
     checksum  : str   # sha1, 用来判断图库首页 HTML 要不要更新
+    use_proxy : str   # 是否使用 http proxy
+    http_proxy : str  # 默认 http://127.0.0.1:1081
     r2_html   : str   # 图库首页的 R2 地址 (自动获取)
 
     image_width_max     : int  # 图片宽度上限, 单位: 像素
@@ -244,6 +246,8 @@ class Gallery:
             frontpage=Frontpage.Story.name,
             albums=[],
             checksum="",
+            use_proxy="",
+            http_proxy="http://127.0.0.1:1081",
             r2_html="",
             image_width_max=1000,
             image_height_max=1000,

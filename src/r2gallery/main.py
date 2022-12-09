@@ -51,14 +51,20 @@ def show_info(ctx):
     is_flag=True,
     help="Force resize all oversize pictures."
 )
+@click.option("--use-proxy", help="Set '1' or 'on' or 'true' to use proxy.")
 @click.pass_context
-def cli(ctx, info, update, force_resize):
+def cli(ctx, info, update, force_resize, use_proxy):
     """R2-Gallery: 个人独立相册，采用 Cloudflare R2 作为图片储存。
 
     https://github.com/ahui2016/R2-Gallery/
     """
     if info:
         show_info(ctx)
+        ctx.exit()
+
+    if use_proxy:
+        gallery = get_gallery(ctx)
+        util.set_use_proxy(use_proxy, gallery)
         ctx.exit()
 
     if update:
