@@ -19,6 +19,7 @@ Local_Pic_HTML         = "local_pic.html"
 Local_Pics_JS          = "local_pics.js"
 Web_Index_HTML         = "web_index.html"
 
+Dot_HTML = ".html"
 Dot_Toml = ".toml"
 Dot_JPEG = ".jpeg"
 # Dot_Webp = ".webp"

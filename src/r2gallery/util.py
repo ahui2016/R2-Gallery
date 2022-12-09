@@ -153,7 +153,7 @@ def render_all_albums(
 
         # 渲染相册内的图片
         pics_data_list = render_album_pics(
-            pics_sorted, album_path, album_data, gallery.to_data())
+            pics_sorted, local_album_folder, album_data, gallery.to_data())
 
         # 渲染相册索引页
         update_gallery = render_album_index_html(
@@ -540,7 +540,7 @@ def render_album_index_html(
 
 def render_album_pics(
         pics_paths:list[Path],
-        album_folder:Path,
+        local_album_folder:Path,
         album:AlbumData,
         gallery:GalleryData,
         force=False
@@ -548,14 +548,15 @@ def render_album_pics(
     """返回 PictureData 有用."""
     pic_data_list = []
     for pic_path in pics_paths:
-        pic_data_list = render_pic_html(
-            pic_path, album_folder, album, gallery, force)
+        pic_data = render_pic_html(
+            pic_path, local_album_folder, album, gallery, force)
+        pic_data_list.append(pic_data)
     return pic_data_list
 
 
 def render_pic_html(
         pic_path:Path,
-        album_folder:Path,
+        local_album_folder:Path,
         album:AlbumData,
         gallery:GalleryData,
         force=False
@@ -571,7 +572,7 @@ def render_pic_html(
         force = True
 
     if force:
-        output_path = album_folder.joinpath(pic_path.name)
+        output_path = local_album_folder.joinpath(f"{pic_data.file_id}{Dot_HTML}")
         render_write("local_pic_html", output_path, dict(
             pic=pic_data,
             album=album,

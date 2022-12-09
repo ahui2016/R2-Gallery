@@ -1,10 +1,10 @@
 "use strict";
 
-pics_id_list = [
+const pics_id_list = [
 {% for pic_id in pics %}
     '{{pic_id}}',
 {%- endfor %}
-]
+];
 
 function getNextPicIndex(current_pic_id) {
   const i = pics_id_list.indexOf(current_pic_id);

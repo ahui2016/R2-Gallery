@@ -1,7 +1,7 @@
 {% extends "local_base.html" %}
 
 {% block scripts %}
-<script src="../local_pics.js"></script>
+<script src="local_pics.js"></script>
 {% endblock %}
 
 {% block title %}
@@ -35,7 +35,9 @@
 {% endblock %}
 
 {% block script %}
-const current_pic_id = {{ pic.file_id }};
+<script>
+const current_pic_id = '{{ pic.file_id }}';
 next_pic_id = pics_id_list[getNextPicIndex(current_pic_id)];
-document.querySelector('next-pic').setAttribute('href', `${next_pic_id}.html`);
+document.querySelector('#next-pic').setAttribute('href', `${next_pic_id}.html`);
+</script>
 {% endblock %}

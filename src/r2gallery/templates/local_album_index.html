@@ -16,7 +16,7 @@
 <ul>
   {% for pic in pictures %}
   <li>{{ pic.title }}<br />
-    <a href="{{parent_dir}}{{album.name}}/{{pic.file_id}}.html">
+    <a href="{{pic.file_id}}.html">
       <img src="{{parent_dir}}{{album.name}}/thumbs/{{pic.file_id}}.jpeg" alt="{{pic.title}}" />
     </a>
   </li>
