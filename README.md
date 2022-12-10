@@ -102,9 +102,13 @@ Cloudflare R2 是一种云储存服务, 本软件用它来储存图片.
   - 最新单图
   - 相册介绍(notes+story+相册列表)
 
-## r2_static_files.json
+## r2_files.json and waiting.json
 
-记录已上传到 R2 的 html/css 等文件的 checksum, 以便判断是否需要更新.
+- 等待上传的文件记录在 waiting.json 中.
+- 只有执行 `r2g upload` 系列命令时才会上传文件到云端.
+- r2_files.json 记录已上传到 R2 的 html/css 等文件的 checksum,
+  以便判断是否需要更新.
+- 不记录图片的 checksum
 
 ## 准备工作
 

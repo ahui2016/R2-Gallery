@@ -6,7 +6,7 @@ import arrow
 import jinja2
 from PIL import Image, ImageOps
 
-from . import model
+from . import model, r2
 from .const import *
 from .model import Gallery, Album, Picture, PictureData, AlbumData, SortBy, GalleryData
 
@@ -304,20 +304,24 @@ def update_album(pics:list, album_path:Path, gallery:Gallery) -> bool:
         return True
 
     new_pics = []
-    for pic in pics:
-        img = open_image(pic)
+    new_files_set = set()
+    for pic_path in pics:
+        img = open_image(pic_path)
         if img is None:
-            print(f"Not Image: {pic.name}")
+            print(f"Not Image: {pic_path.name}")
         else:
-            if create_pic_toml_if_not_exists(img, pic):
-                new_pics.append(pic.name)
-            create_thumb_if_not_exists(img, pic, album_path, gallery)
+            if create_pic_toml_if_not_exists(img, pic_path):
+                new_pics.append(pic_path.name)
+                thumb_path = create_thumb_if_not_exists(img, pic_path, album_path, gallery)
+                new_files_set.add(str(thumb_path))
+                new_files_set.add(str(pic_path))
 
+    r2.add_files_to_r2_waiting(new_pics)
     update_album_pictures(new_pics, album_path)
     return False
 
 
-def update_album_pictures(new_pics:list, album_path:Path):
+def update_album_pictures(new_pics:list[str], album_path:Path):
     """添加图片到相册. TODO: 删除图片."""
     if not new_pics:
         return
@@ -430,11 +434,11 @@ def create_pic_toml_if_not_exists(img:Image, pic_path:Path):
 
 
 def create_thumb_if_not_exists(
-        img:Image, pic_path:Path, album_path:Path, gallery:Gallery):
+        img:Image, pic_path:Path, album_path:Path, gallery:Gallery) -> Path:
     thumb_name = pic_path.with_suffix(gallery.thumb_suffix()).name.lower()
     thumb_path = album_path.joinpath(Thumbs, thumb_name)
-    if not thumb_path.exists():
-        create_thumb(img, thumb_path, gallery)
+    create_thumb(img, thumb_path, gallery)
+    return thumb_path
 
 
 def create_thumb(img:Image, thumb_path:Path, gallery:Gallery):
@@ -603,6 +607,7 @@ def set_use_proxy(sw:str, gallery:Gallery):
 
     if not gallery.http_proxy and use_proxy:
         print(f"未设置 proxy, 请用文本编辑器打开 {Gallery_Toml_Path} 填写 http proxy")
+
 
 
 def print_err(err:str):

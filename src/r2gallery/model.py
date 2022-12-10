@@ -9,7 +9,7 @@ import tomli
 import mistune
 
 from .const import Gallery_Toml_Path, RFC3339, Metadata, Dot_Toml, CWD, \
-    Album_Toml, Dot_JPEG, Index_HTML, Dot_HTML
+    Album_Toml, Dot_JPEG, Index_HTML, Dot_HTML, Thumbs
 
 Filename_Forbid_Pattern = re.compile(r"[^._0-9a-zA-Z\-]")
 """文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)。"""
@@ -39,10 +39,10 @@ def sort_by_from(text:str):
 
 
 class Frontpage(Enum):
-    """图库首页的展示方式"""
-    Story  = auto()  # 展示图库简介, 故事及相册列表
-    Single = auto()  # 只展示最新的一张图片
-    List   = auto()  # 只展示相册列表
+    """图库/相册首页的展示方式"""
+    Story  = auto()  # 展示简介, 故事及列表
+    Single = auto()  # 只展示一张图片
+    List   = auto()  # 只展示列表
 
 
 # 注意! 本软件暂时只能使用 JPEG, 原本打算让用户自由选择格式,
@@ -60,13 +60,15 @@ def now():
 @dataclass
 class PictureData:
     """用于生成前端 HTML"""
-    file_id      : str  # 相当于 Picture.file_id
-    filename     : str  # 图片文件名, 包括后缀, 不包括文件夹
-    title        : str  # 提取自 Picture.notes 的第一行
-    notes        : str  # 提取自 Picture.notes (不含第一行)
-    story        : str  # Picture.story 转换为 HTML
-    ctime        : str  # 相当于 Picture.ctime
-    r2_url       : str  # 相当于 Picture.r2_html
+    file_id       : str  # 相当于 Picture.file_id
+    filename      : str  # 图片文件名, 包括后缀, 不包括文件夹
+    title         : str  # 提取自 Picture.notes 的第一行
+    notes         : str  # 提取自 Picture.notes (不含第一行)
+    story         : str  # Picture.story 转换为 HTML
+    ctime         : str  # 相当于 Picture.ctime
+    r2_html       : str  # 图片页面的 R2 对象名
+    r2_pic_name   : str  # 图片本身的 R2 对象名
+    r2_thumb_name : str  # 缩略图的 R2 对象名
 
 
 @dataclass
@@ -76,7 +78,6 @@ class Picture:
     story    : str  # 图片的故事 (Markdown 格式)
     ctime    : str  # 拍摄或创作或发布日期
     checksum : str  # sha1, 用来判断 notes/story 有无变更
-    r2_url   : str  # 图片的 R2 地址 (自动获取)
 
     @classmethod
     def default(cls, file:Path, ctime:str=None):
@@ -89,7 +90,6 @@ class Picture:
             story="",
             ctime=ctime,
             checksum="",
-            r2_url="",
         )
 
     @classmethod
@@ -110,11 +110,11 @@ class Picture:
         pic_title, _, _ = split_notes(self.notes)
         return pic_title
 
-    def r2_html(self, bucket_url:str, album_folder:str) -> str:
-        """R2 地址"""
-        return f"{bucket_url}/{album_folder}/{self.file_id}{Dot_HTML}"
+    def r2_html(self, album_folder:str) -> str:
+        """R2 HTML object name"""
+        return f"{album_folder}/{self.file_id}{Dot_HTML}"
 
-    def to_data(self, bucket_url:str, album_folder:str, pic_name:str) -> PictureData:
+    def to_data(self, album_folder:str, pic_name:str) -> PictureData:
         """pic_name 是图片文件名, 包括后缀, 不包括文件夹."""
         title, notes, _ = split_notes(self.notes)
         return PictureData(
@@ -124,23 +124,24 @@ class Picture:
             notes=notes,
             story=mistune.html(self.story),
             ctime=self.ctime,
-            r2_url=self.r2_html(bucket_url, album_folder),
+            r2_html=self.r2_html(album_folder),
+            r2_pic_name=f"{album_folder}/{pic_name}",
+            r2_thumb_name=f"{album_folder}/{Thumbs}/{self.file_id}{Dot_JPEG}",
         )
 
 
 @dataclass
 class AlbumData:
     """用于生成前端 HTML"""
-    name         : str  # 相当于 Album.foldername
-    author       : str  # 相当于 Album.author
-    title        : str  # 提取自 Album.notes 的第一行
-    notes        : str  # 提取自 Album.notes (不含第一行)
-    story        : str  # Album.story 转换为 HTML
-    sort_by      : str  # 相当于 Album.sort_by
-    cover_thumb  : str  # Album.cover 的缩略图文件名
-    cover_title  : str  # 提取自 Album.cover 的 notes
-    cover_r2_url : str  # Album.cover 的 R2 url
-    r2_url       : str  # 相当于 Album.r2_html
+    name               : str  # 相当于 Album.foldername
+    author             : str  # 相当于 Album.author
+    title              : str  # 提取自 Album.notes 的第一行
+    notes              : str  # 提取自 Album.notes (不含第一行)
+    story              : str  # Album.story 转换为 HTML
+    sort_by            : str  # 相当于 Album.sort_by
+    r2_html            : str  # 相当于 Album.r2_html
+    cover_thumb        : str  # Album.cover 的缩略图文件名
+    cover_title        : str  # 提取自 Album.cover 的 notes
 
 
 @dataclass
@@ -182,11 +183,11 @@ class Album:
         text = self.author + self.notes + self.story + self.sort_by + pictures + self.cover
         return text_checksum(text)
 
-    def r2_html(self, bucket_url:str) -> str:
-        """R2 地址"""
-        return f"{bucket_url}/{self.foldername}/{Index_HTML}"
+    def r2_html(self) -> str:
+        """R2 HTML object name"""
+        return f"{self.foldername}/{Index_HTML}"
 
-    def to_data(self, album_path:Path, bucket_url:str) -> AlbumData:
+    def to_data(self, album_path:Path) -> AlbumData:
         title, notes, err = split_notes(self.notes)
         if err:
             title = self.foldername
@@ -200,10 +201,9 @@ class Album:
             notes=notes,
             story=mistune.html(self.story),
             sort_by=self.sort_by,
+            r2_html=self.r2_html(),
             cover_thumb=cover.file_id+Dot_JPEG,
             cover_title=cover.title(),
-            cover_r2_url=cover.r2_html(bucket_url, self.foldername),
-            r2_url=self.r2_html(bucket_url),
         )
 
 
@@ -214,7 +214,6 @@ class GalleryData:
     notes        : str  # 提取自 Gallery.notes (不含第一行)
     story        : str  # Gallery.story 转换为 HTML
     frontpage    : str  # 相当于 Gallery.frontpage
-    r2_url       : str  # 相当于 Gallery.r2_html
 
 
 @dataclass
@@ -275,7 +274,7 @@ class Gallery:
         return gallery
 
     def r2_html(self) -> str:
-        """R2 地址"""
+        """R2 首页地址"""
         return f"{self.bucket_url}/{Index_HTML}"
 
     def to_data(self) -> GalleryData:
@@ -288,7 +287,6 @@ class Gallery:
             notes=notes,
             story=mistune.html(self.story),
             frontpage=self.frontpage,
-            r2_url=self.r2_html(),
         )
 
     def title(self):
@@ -319,7 +317,7 @@ class Gallery:
             album_path = CWD.joinpath(album_name)
             album_toml_path = album_path.joinpath(Album_Toml)
             album = Album.loads(album_toml_path)
-            albums.append(album.to_data(album_path, self.bucket_url))
+            albums.append(album.to_data(album_path))
         return albums
 
 

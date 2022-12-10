@@ -20,5 +20,4 @@ ctime = '{{data.ctime}}'
 
 checksum = '{{data.checksum}}'
 
-r2_url = '{{data.r2_url}}'
 
