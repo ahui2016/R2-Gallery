@@ -22,5 +22,3 @@ checksum = '{{data.checksum}}'
 
 r2_url = '{{data.r2_url}}'
 
-r2_html = '{{data.r2_html}}'
-

@@ -8,7 +8,8 @@ import arrow
 import tomli
 import mistune
 
-from .const import Gallery_Toml_Path, RFC3339, Metadata, Dot_Toml, CWD, Album_Toml, Dot_JPEG
+from .const import Gallery_Toml_Path, RFC3339, Metadata, Dot_Toml, CWD, \
+    Album_Toml, Dot_JPEG, Index_HTML, Dot_HTML
 
 Filename_Forbid_Pattern = re.compile(r"[^._0-9a-zA-Z\-]")
 """文件名只能使用 0-9, a-z, A-Z, _(下划线), -(短横线), .(点)。"""
@@ -76,7 +77,6 @@ class Picture:
     ctime    : str  # 拍摄或创作或发布日期
     checksum : str  # sha1, 用来判断 notes/story 有无变更
     r2_url   : str  # 图片的 R2 地址 (自动获取)
-    r2_html  : str  # 图片网页的 R2 地址 (自动获取)
 
     @classmethod
     def default(cls, file:Path, ctime:str=None):
@@ -90,7 +90,6 @@ class Picture:
             ctime=ctime,
             checksum="",
             r2_url="",
-            r2_html="",
         )
 
     @classmethod
@@ -111,7 +110,11 @@ class Picture:
         pic_title, _, _ = split_notes(self.notes)
         return pic_title
 
-    def to_data(self, pic_name:str) -> PictureData:
+    def r2_html(self, bucket_url:str, album_folder:str) -> str:
+        """R2 地址"""
+        return f"{bucket_url}/{album_folder}/{self.file_id}{Dot_HTML}"
+
+    def to_data(self, bucket_url:str, album_folder:str, pic_name:str) -> PictureData:
         """pic_name 是图片文件名, 包括后缀, 不包括文件夹."""
         title, notes, _ = split_notes(self.notes)
         return PictureData(
@@ -121,7 +124,7 @@ class Picture:
             notes=notes,
             story=mistune.html(self.story),
             ctime=self.ctime,
-            r2_url="",
+            r2_url=self.r2_html(bucket_url, album_folder),
         )
 
 
@@ -150,7 +153,6 @@ class Album:
     pictures   : list  # 图片文件名列表
     cover      : str   # 封面 (指定一个图片文件名)
     checksum   : str   # sha1, 用来判断相册首页 HTML 要不要更新
-    r2_html    : str   # 相册网页的 R2 地址 (自动获取)
 
     @classmethod
     def default(cls, foldername):
@@ -163,7 +165,6 @@ class Album:
             pictures=[],
             cover="",
             checksum="",
-            r2_html=""
         )
 
     @classmethod
@@ -181,7 +182,11 @@ class Album:
         text = self.author + self.notes + self.story + self.sort_by + pictures + self.cover
         return text_checksum(text)
 
-    def to_data(self, album_path:Path) -> AlbumData:
+    def r2_html(self, bucket_url:str) -> str:
+        """R2 地址"""
+        return f"{bucket_url}/{self.foldername}/{Index_HTML}"
+
+    def to_data(self, album_path:Path, bucket_url:str) -> AlbumData:
         title, notes, err = split_notes(self.notes)
         if err:
             title = self.foldername
@@ -197,8 +202,8 @@ class Album:
             sort_by=self.sort_by,
             cover_thumb=cover.file_id+Dot_JPEG,
             cover_title=cover.title(),
-            cover_r2_url="",
-            r2_url="",
+            cover_r2_url=cover.r2_html(bucket_url, self.foldername),
+            r2_url=self.r2_html(bucket_url),
         )
 
 
@@ -222,7 +227,6 @@ class Gallery:
     checksum  : str   # sha1, 用来判断图库首页 HTML 要不要更新
     use_proxy : str   # 是否使用 http proxy
     http_proxy : str  # 默认 http://127.0.0.1:1081
-    r2_html   : str   # 图库首页的 R2 地址 (自动获取)
 
     image_width_max     : int  # 图片宽度上限, 单位: 像素
     image_height_max    : int  # 图片高度上限, 单位: 像素
@@ -248,7 +252,6 @@ class Gallery:
             checksum="",
             use_proxy="",
             http_proxy="http://127.0.0.1:1081",
-            r2_html="",
             image_width_max=1000,
             image_height_max=1000,
             image_size_max=2,
@@ -271,6 +274,10 @@ class Gallery:
         gallery.frontpage = gallery.frontpage.capitalize()
         return gallery
 
+    def r2_html(self) -> str:
+        """R2 地址"""
+        return f"{self.bucket_url}/{Index_HTML}"
+
     def to_data(self) -> GalleryData:
         title, notes, err = split_notes(self.notes)
         if err:
@@ -281,7 +288,7 @@ class Gallery:
             notes=notes,
             story=mistune.html(self.story),
             frontpage=self.frontpage,
-            r2_url="",
+            r2_url=self.r2_html(),
         )
 
     def title(self):
@@ -312,7 +319,7 @@ class Gallery:
             album_path = CWD.joinpath(album_name)
             album_toml_path = album_path.joinpath(Album_Toml)
             album = Album.loads(album_toml_path)
-            albums.append(album.to_data(album_path))
+            albums.append(album.to_data(album_path, self.bucket_url))
         return albums
 
 

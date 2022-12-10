@@ -25,9 +25,8 @@ albums = [
 {%- endfor %}
 ]
 
-# 注意, 请勿修改 checksum, r2_html, image_output_format
+# 注意, 请勿修改 checksum, image_output_format
 checksum = '{{data.checksum}}'
-r2_html = '{{data.r2_html}}'
 image_output_format = '{{data.image_output_format}}'
 
 # 可修改, 单位: MB

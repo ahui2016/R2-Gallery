@@ -15,6 +15,7 @@ dependencies = [
   "tomli",
   "pillow",
   "mistune",
+  "boto3",
 ]
 requires-python = ">=3.10"
 dynamic = ["version", "description"]
