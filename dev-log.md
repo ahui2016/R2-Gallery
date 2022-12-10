@@ -28,6 +28,7 @@
 - 生成同名 (不同后缀名) 的 toml 文件
 - 生成缩略图
 - 添加图片文件名到 album.toml
+- 添加图片 HTML 到 r2_files.json
 - 添加图片路径到 r2_waiting["add"]
 - 添加缩略图路径到 r2_waiting["add"]
 - 等执行 `r2g upload -all` 时才上传 r2_waiting["add"]

@@ -27,9 +27,9 @@ def get_proxies(cfg):
     return None
 
 
-def add_files_to_r2_waiting(new_files:Iterable):
+def add_pics_to_r2_waiting(new_pics:Iterable):
     waiting = get_r2_waiting()
-    waiting["add"] = waiting["add"].intersection(new_files)
+    waiting["add"] = waiting["add"].intersection(new_pics)
     write_r2_waiting(waiting)
 
 
@@ -48,13 +48,19 @@ def get_r2_waiting() -> dict:
     return dict(add=set(), delete=set())
 
 
-def write_r2_files_json(checksums:dict):
-    data = json.dumps(checksums)
+def write_r2_files_json(r2_files:dict):
+    data = json.dumps(r2_files)
     R2_Files_JSON_Path.write_text(data)
 
 
-def get_r2_checksums() -> dict:
+def get_r2_files() -> dict:
     if R2_Files_JSON_Path.exists():
         return json.loads(R2_Files_JSON_Path.read_text())
     return {}
 
+
+def add_to_r2_files(obj_names: list):
+    r2_files = get_r2_files()
+    for obj_name, checksum in obj_names:
+        r2_files[obj_name] = checksum
+    write_r2_files_json(r2_files)

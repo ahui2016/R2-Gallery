@@ -69,6 +69,7 @@ def init_gallery():
     Output_Web_Path.mkdir()
     copy_templates()
     render_gallery_toml(Gallery.default(CWD.name))
+    r2.add_files_to_r2_waiting([str(Gallery_Toml_Path)])
     print("图库创建成功。")
     print(f"请用文本编辑器打开 {Gallery_Toml_Path} 填写图库相关信息。")
     return None
@@ -110,9 +111,11 @@ def create_album(name:str, gallery:Gallery):
     thumbs_path = album_path.joinpath(Thumbs)
     thumbs_path.mkdir()
     metadata_path.mkdir()
-    render_album_toml(Album.default(name))
+    album = Album.default(name)
+    render_album_toml(album)
     gallery.add_album(name)
     render_gallery_toml(gallery)
+    r2.add_files_to_r2_waiting([CWD.joinpath(album.r2_html())])
     print("相册创建成功。")
     print(f"请用文本编辑器打开 {album_toml_path} 填写相册相关信息。")
     return None

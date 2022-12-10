@@ -6,6 +6,7 @@ from pathlib import Path
 Templates        = "templates"
 Output_Local     = "output_local"
 Output_Web       = "output_web"
+Output_R2        = "output_r2"
 Gallery_Toml     = "gallery.toml"
 Album_Toml       = "album.toml"
 Picture_Toml     = "picture.toml"
