@@ -4,8 +4,21 @@
 
 - 每个相册可单独设置展示方式: 缩略图 or 单图(index2.html)
 - 上传图片到 R2
-- r2_static_files.json:
+- r2_files.json:
   记录已上传到 R2 的 html/css 等文件的 checksum, 以便判断是否需要更新.
+- 生成 output_r2 版本的网页 (添加文件到 r2_files.json)
+- 生成 output_web 版本的网页 (添加文件到 r2_waiting.json)
+
+## 2022-12-11
+
+- 添加待上传的文件到 r2_files.json
+- 添加待上传的图片到 r2_waiting.json
+- 渲染 output_web 的 HTML 文件
+
+## 2022-12-10
+
+- r2_waiting.json: 记录待上传和待删除的图片
+- r2_files.json: 记录 HTML/CSS 等文件的 checksum
 
 ## 2022-12-09
 
@@ -22,16 +35,17 @@
 
 ### 添加图片
 
-执行 `r2g -update` 时自动找出新图片, 没有 toml 文件的图片就是新图片,
-对于一张新图片, 要做以下处理:
+执行 `r2g -update` 时 (在 render 阶段) 自动找出新图片,
+没有 toml 文件的图片就是新图片, 对于一张新图片, 要做以下处理:
 
 - 生成同名 (不同后缀名) 的 toml 文件
 - 生成缩略图
 - 添加图片文件名到 album.toml
-- 添加图片 HTML 到 r2_files.json
-- 添加图片路径到 r2_waiting["add"]
-- 添加缩略图路径到 r2_waiting["add"]
-- 等执行 `r2g upload -all` 时才上传 r2_waiting["add"]
+- 添加图片的 HTML 到 r2_files.json
+- 添加图片路径到 r2_waiting["upload"]
+- 添加缩略图路径到 r2_waiting["upload"]
+- 等执行 `r2g upload -all` 时才上传 r2_waiting["upload"]
+- 执行 `r2g upload -all` 时更新 r2_files.json 里的 checksum
 
 ### 删除图片
 

@@ -5,6 +5,7 @@ import boto3
 from botocore.config import Config
 
 from .const import Use_Proxy, Http_Proxy, R2_Files_JSON_Path, R2_Waiting_JSON_Path
+from .model import PictureData
 
 
 def get_bucket(s3, cfg):
@@ -29,12 +30,12 @@ def get_proxies(cfg):
 
 def add_pics_to_r2_waiting(new_pics:Iterable):
     waiting = get_r2_waiting()
-    waiting["add"] = waiting["add"].intersection(new_pics)
+    waiting["upload"] = waiting["upload"].intersection(new_pics)
     write_r2_waiting(waiting)
 
 
 def write_r2_waiting(waiting:dict):
-    waiting["add"] = list(waiting["add"])
+    waiting["upload"] = list(waiting["upload"])
     waiting["delete"] = list(waiting["delete"])
     R2_Waiting_JSON_Path.write_text(json.dumps(waiting))
 
@@ -42,7 +43,7 @@ def write_r2_waiting(waiting:dict):
 def get_r2_waiting() -> dict:
     if R2_Waiting_JSON_Path.exists():
         waiting = json.loads(R2_Waiting_JSON_Path.read_text())
-        waiting["add"] = set(waiting["add"])
+        waiting["upload"] = set(waiting["upload"])
         waiting["delete"] = set(waiting["delete"])
         return waiting
     return dict(add=set(), delete=set())
@@ -60,7 +61,14 @@ def get_r2_files() -> dict:
 
 
 def add_to_r2_files(obj_names: list):
+    """obj_names 是 obj_name 的列表.
+
+    将待上传的 obj_name 添加到 r2_files, checksum 是空字符串。
+    注意: 待上传的 obj_name 对应的 checksum 总是空字符串,
+    只有当上传时, 才更新真实的 checksum.
+    """
     r2_files = get_r2_files()
-    for obj_name, checksum in obj_names:
-        r2_files[obj_name] = checksum
+    for obj_name in obj_names:
+        r2_files[obj_name] = ""
     write_r2_files_json(r2_files)
+

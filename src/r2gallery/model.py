@@ -214,6 +214,7 @@ class GalleryData:
     notes        : str  # 提取自 Gallery.notes (不含第一行)
     story        : str  # Gallery.story 转换为 HTML
     frontpage    : str  # 相当于 Gallery.frontpage
+    bucket_url   : str  # 相当于 Gallery.bucket_url
 
 
 @dataclass
@@ -271,10 +272,12 @@ class Gallery:
         gallery.notes = gallery.notes.strip()
         gallery.story = gallery.story.strip()
         gallery.frontpage = gallery.frontpage.capitalize()
+        bucket_url = gallery.bucket_url
+        gallery.bucket_url = bucket_url.rstrip("/") + "/"
         return gallery
 
-    def r2_html(self) -> str:
-        """R2 首页地址"""
+    def r2_html_url(self) -> str:
+        """R2 首页的完整网址"""
         return f"{self.bucket_url}/{Index_HTML}"
 
     def to_data(self) -> GalleryData:
@@ -287,6 +290,7 @@ class Gallery:
             notes=notes,
             story=mistune.html(self.story),
             frontpage=self.frontpage,
+            bucket_url=self.bucket_url,
         )
 
     def title(self):

@@ -1,4 +1,4 @@
-{% extends "local_base.html" %}
+{% extends "web_base.html" %}
 
 {% block scripts %}
 <script src="pics_id_list.js"></script>
@@ -19,7 +19,7 @@
 
 <p>
   <a id="next-pic" href="">
-    <img src="{{parent_dir}}{{album.name}}/{{pic.filename}}" alt="{{pic.title}}" />
+    <img src="{{gallery.bucket_url}}{{album.name}}/{{pic.filename}}" alt="{{pic.title}}" />
   </a>
 </p>
 
