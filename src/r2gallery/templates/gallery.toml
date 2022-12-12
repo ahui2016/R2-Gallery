@@ -32,7 +32,8 @@ image_output_format = '{{data.image_output_format}}'
 # 可修改, 单位: MB
 image_size_max = {{data.image_size_max}}
 
-# 以下全部项目均可修改
+# 以下全部项目均可修改，方括号部分必须填写。
+# 填写方法详见 https://github.com/ahui2016/R2-Gallery
 
 use_proxy = false
 http_proxy = "http://127.0.0.1:1081"

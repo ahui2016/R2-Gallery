@@ -6,32 +6,33 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError
 
-from .const import Use_Proxy, Http_Proxy, R2_Files_JSON_Path, R2_Waiting_JSON_Path, Thumbs
+from .const import R2_Files_JSON_Path, R2_Waiting_JSON_Path, Thumbs
 
 
-def get_bucket(s3, cfg):
-    return s3.Bucket(cfg["bucket_name"])
+def get_bucket(cfg):
+    s3 = get_s3(cfg)
+    return s3.Bucket(cfg.bucket_name)
 
 
 def get_s3(cfg):
     return boto3.resource(
         's3',
-        endpoint_url=cfg["endpoint_url"],
-        aws_access_key_id=cfg["aws_access_key_id"],
-        aws_secret_access_key=cfg["aws_secret_access_key"],
+        endpoint_url=cfg.endpoint_url,
+        aws_access_key_id=cfg.aws_access_key_id,
+        aws_secret_access_key=cfg.aws_secret_access_key,
         config=Config(proxies=get_proxies(cfg)),
     )
 
 
 def get_proxies(cfg):
-    if cfg[Use_Proxy]:
-        return dict(http=cfg[Http_Proxy], https=cfg[Http_Proxy])
+    if cfg.use_proxy:
+        return dict(http=cfg.http_proxy, https=cfg.http_proxy)
     return None
 
 
 def add_pics_to_r2_waiting(new_pics:Iterable):
     waiting = get_r2_waiting()
-    waiting["upload"] = waiting["upload"].intersection(new_pics)
+    waiting["upload"] = waiting["upload"].union(new_pics)
     write_r2_waiting(waiting)
 
 
@@ -47,7 +48,7 @@ def get_r2_waiting() -> dict:
         waiting["upload"] = set(waiting["upload"])
         waiting["delete"] = set(waiting["delete"])
         return waiting
-    return dict(add=set(), delete=set())
+    return dict(upload=set(), delete=set())
 
 
 def write_r2_files_json(r2_files:dict):
@@ -61,7 +62,7 @@ def get_r2_files() -> dict:
     return {}
 
 
-def add_to_r2_files(obj_names: list):
+def add_to_r2_files(obj_names: list[str]):
     """obj_names 是 obj_name 的列表.
 
     将待上传的 obj_name 添加到 r2_files, checksum 是空字符串。
@@ -99,6 +100,7 @@ def upload_pics(bucket):
     r2_waiting = get_r2_waiting()
     success = set()
     for pic_path in r2_waiting["upload"]:
+        print(f"upload -> {pic_path}")
         if upload_pic(pic_path, bucket):
             success.add(pic_path)
         else:

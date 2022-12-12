@@ -1,6 +1,7 @@
 import click
 
-from . import __version__, util
+from . import __version__, util, r2
+from .const import Gallery_Toml_Path
 from .util import print_err, print_err_exist, get_gallery
 
 """
@@ -32,6 +33,11 @@ def show_info(ctx):
     print(f"[Image Output Format] {gallery.image_output_format}")
     print(f"[Thumbnail Size     ] {gallery.thumb_size}")
     print()
+    print(f"[use proxy] {gallery.use_proxy}")
+    proxy = gallery.http_proxy
+    if not proxy and gallery.use_proxy:
+        proxy = f"\n未设置 proxy, 请用文本编辑器打开 '{Gallery_Toml_Path}' 填写 http proxy"
+    print(f"[http proxy] {proxy}")
 
 
 @click.group(invoke_without_command=True)
@@ -125,6 +131,24 @@ def album(ctx, name):
     if name:
         err = util.create_album(name, gallery)
         print_err(err)
+        ctx.exit()
+
+    click.echo(ctx.get_help())
+
+
+@cli.command(context_settings=CONTEXT_SETTINGS)
+@click.option("-pics", is_flag=True, help="Upload pictures.")
+@click.pass_context
+def upload(ctx, pics):
+    """Upload pictures or static files.
+
+    上传图片或 HTML/CSS 等文件。
+    """
+    gallery = get_gallery(ctx)
+
+    if pics:
+        bucket = r2.get_bucket(gallery)
+        r2.upload_pics(bucket)
         ctx.exit()
 
     click.echo(ctx.get_help())

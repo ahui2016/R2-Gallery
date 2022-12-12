@@ -72,7 +72,7 @@ def init_gallery():
     Output_Web_Path.mkdir()
     copy_templates()
     render_gallery_toml(Gallery.default(CWD.name))
-    r2.add_to_r2_files([{Index_HTML: ""}])
+    r2.add_to_r2_files([Index_HTML])
     print("图库创建成功。")
     print(f"请用文本编辑器打开 {Gallery_Toml_Path} 填写图库相关信息。")
     return None
@@ -118,7 +118,7 @@ def create_album(name:str, gallery:Gallery):
     render_album_toml(album)
     gallery.add_album(name)
     render_gallery_toml(gallery)
-    r2.add_to_r2_files([{album.r2_html(): ""}])
+    r2.add_to_r2_files([album.r2_html()])
     print("相册创建成功。")
     print(f"请用文本编辑器打开 {album_toml_path} 填写相册相关信息。")
     return None
@@ -130,7 +130,7 @@ def render_all(albums_pics:dict, gallery:Gallery, force=False):
     update_gallery = render_all_albums(albums_pics, gallery)
     if not force:
         force = update_gallery
-    render_index_html("local_index_html", local_output_path, gallery, force)
+    force = render_index_html("local_index_html", local_output_path, gallery, force)
     render_index_html("web_index_html", web_output_path, gallery, force)
     r2.add_to_r2_files([Index_HTML])
 
@@ -156,7 +156,9 @@ def render_all_albums(
         album_data = album.to_data(album_path)
         pics_sorted = sort_pics(pics, album, album_path)
         local_album_folder = Output_Local_Path.joinpath(album.foldername)
+        local_album_folder.mkdir(exist_ok=True)
         web_album_folder = Output_Web_Path.joinpath(album.foldername)
+        web_album_folder.mkdir(exist_ok=True)
 
         # 渲染相册内的图片
         pics_data_list = render_album_pics(
@@ -275,11 +277,11 @@ def print_bad_names(albums:dict, err:str):
             print(f"{album_name}/{pic_name}")
 
 
-def pic_paths_to_pic_data(pic_paths:list[Path]) -> list[PictureData]:
+def pic_paths_to_pic_data(album_folder:str, pic_paths:list[Path]) -> list[PictureData]:
     pic_data_list = []
     for pic_path in pic_paths:
         toml_path = get_pic_toml_path(pic_path)
-        pic_data = Picture.loads(toml_path).to_data(pic_path.name)
+        pic_data = Picture.loads(toml_path).to_data(album_folder, pic_path.name)
         pic_data_list.append(pic_data)
     return pic_data_list
 
@@ -332,7 +334,7 @@ def update_album(pics:list, album_path:Path, gallery:Gallery) -> bool:
                 new_files_set.add(str(thumb_path))
                 new_files_set.add(str(pic_path))
 
-    r2.add_pics_to_r2_waiting(new_pics)
+    r2.add_pics_to_r2_waiting(new_files_set)
     update_album_pictures(new_pics, album_path)
     return False
 
@@ -511,7 +513,8 @@ def open_image(file):
 
 def render_index_html(
         tmpl_name:str, output_path:Path, gallery:Gallery, force=False
-):
+) -> bool:
+    """返回 True 表示执行了渲染。"""
     checksum = gallery.make_checksum()
     if gallery.checksum != checksum:
         gallery.checksum = checksum
@@ -525,10 +528,12 @@ def render_index_html(
             parent_dir="../"
         ))
 
+    return force
+
 
 def render_album_index_html(
-        local_output_path:Path,
-        web_output_path:Path,
+        local_output_folder:Path,
+        web_output_folder:Path,
         gallery:Gallery,
         album:Album,
         album_data:AlbumData,
@@ -545,12 +550,10 @@ def render_album_index_html(
         update_gallery = True
 
     if force:
-        local_output_path.mkdir(exist_ok=True)
-        local_output_path = local_output_path.joinpath(Index_HTML)
-        local_js_output_path = local_output_path.joinpath(Pics_Id_List_JS)
-        web_output_path.mkdir(exist_ok=True)
-        web_output_path = web_output_path.joinpath(Index_HTML)
-        web_js_output_path = web_output_path.joinpath(Pics_Id_List_JS)
+        local_output_path = local_output_folder.joinpath(Index_HTML)
+        web_output_path = web_output_folder.joinpath(Index_HTML)
+        local_js_output_path = local_output_folder.joinpath(Pics_Id_List_JS)
+        web_js_output_path = web_output_folder.joinpath(Pics_Id_List_JS)
         gallery_data = gallery.to_data()
         render_write("local_album_index_html", local_output_path, dict(
             gallery=gallery_data,
@@ -559,7 +562,7 @@ def render_album_index_html(
             albums=gallery.get_albumdata(),
             parent_dir="../../"
         ))
-        render_write("web_album_index_html", local_output_path, dict(
+        render_write("web_album_index_html", web_output_path, dict(
             gallery=gallery_data,
             album=album_data,
             pictures=pics_data_list,
@@ -604,7 +607,7 @@ def render_pic_html(
     """返回 PictureData 有用."""
     pic_toml_path = get_pic_toml_path(pic_path)
     pic = Picture.loads(pic_toml_path)
-    pic_data = pic.to_data(pic_path.name)
+    pic_data = pic.to_data(album.name, pic_path.name)
     checksum = pic.make_checksum()
     if pic.checksum != checksum:
         pic.checksum = checksum

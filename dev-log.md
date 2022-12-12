@@ -8,8 +8,13 @@
   记录已上传到 R2 的 html/css 等文件的 checksum, 以便判断是否需要更新.
 - 生成 output_r2 版本的网页 (添加文件到 r2_files.json)
 - 生成 output_web 版本的网页 (添加文件到 r2_waiting.json)
-- `r2g -info` 显示 http proxy
 - `r2g upload -pics` 上传图片
+- PictureData.r2_pic_name, PictureData.r2_thumb_name 可能没用
+- util.pic_paths_to_pic_data() 可能没用
+
+## 2022-12-12
+
+- `r2g -info` 显示 http proxy
 
 ## 2022-12-11
 
