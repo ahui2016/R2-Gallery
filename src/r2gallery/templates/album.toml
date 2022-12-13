@@ -1,8 +1,7 @@
 # 本文件采用 TOML 格式 https://toml.io/
 # 以下项目的含义及其填写方法详见 https://github.com/ahui2016/R2-Gallery
 
-# 以下标明 '可修改' 的项目可以直接编辑, 未标明的请勿直接编辑.
-
+# 请勿修改 foldername
 foldername = '{{data.foldername}}'
 
 # 可修改, 通常留空
@@ -31,5 +30,9 @@ pictures = [
 # 可修改
 cover = '{{data.cover}}'
 
+# 可修改. 请选择: 'Story' / 'Single' / 'List'
+frontpage = '{{data.frontpage}}'
+
+# 请勿修改 checksum
 checksum = '{{data.checksum}}'
 

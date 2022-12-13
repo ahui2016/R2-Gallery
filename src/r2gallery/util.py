@@ -26,13 +26,16 @@ tmplfile = dict(
     gallery_toml           = Gallery_Toml,
     album_toml             = Album_Toml,
     picture_toml           = Picture_Toml,
-    local_index_html       = Local_Index_HTML,
-    local_album_index_html = Local_Album_Index_HTML,
-    local_pic_html         = Local_Pic_HTML,
+    local_index_html       = "local_index.html",
+    local_album_index_html = "local_album_index.html",
+    local_pic_html         = "local_pic.html",
     pics_id_list_js        = Pics_Id_List_JS,
-    web_index_html         = Web_Index_HTML,
-    web_album_index_html   = Web_Album_Index_HTML,
-    web_pic_html           = Web_Pic_HTML,
+    web_index_html         = "web_index.html",
+    web_album_index_html   = "web_album_index.html",
+    web_pic_html           = "web_pic.html",
+    r2_index_html          = "r2_index.html",
+    r2_album_index_html    = "r2_album_index.html",
+    r2_pic_html            = "r2_pic.html",
 )
 
 
@@ -70,6 +73,7 @@ def init_gallery():
 
     Output_Local_Path.mkdir()
     Output_Web_Path.mkdir()
+    Output_R2_Path.mkdir()
     copy_templates()
     render_gallery_toml(Gallery.default(CWD.name))
     r2.add_to_r2_files([Index_HTML])
@@ -118,7 +122,6 @@ def create_album(name:str, gallery:Gallery):
     render_album_toml(album)
     gallery.add_album(name)
     render_gallery_toml(gallery)
-    r2.add_to_r2_files([album.r2_html()])
     print("相册创建成功。")
     print(f"请用文本编辑器打开 {album_toml_path} 填写相册相关信息。")
     return None
@@ -127,11 +130,13 @@ def create_album(name:str, gallery:Gallery):
 def render_all(albums_pics:dict, gallery:Gallery, force=False):
     local_output_path = Output_Local_Path.joinpath(Index_HTML)
     web_output_path = Output_Web_Path.joinpath(Index_HTML)
+    r2_output_path = Output_R2_Path.joinpath(Index_HTML)
     update_gallery = render_all_albums(albums_pics, gallery)
     if not force:
         force = update_gallery
     force = render_index_html("local_index_html", local_output_path, gallery, force)
     render_index_html("web_index_html", web_output_path, gallery, force)
+    render_index_html("r2_index_html", r2_output_path, gallery, force)
     r2.add_to_r2_files([Index_HTML])
 
 
@@ -155,16 +160,20 @@ def render_all_albums(
         album = Album.loads(album_path.joinpath(Album_Toml))
         album_data = album.to_data(album_path)
         pics_sorted = sort_pics(pics, album, album_path)
+
         local_album_folder = Output_Local_Path.joinpath(album.foldername)
         local_album_folder.mkdir(exist_ok=True)
         web_album_folder = Output_Web_Path.joinpath(album.foldername)
         web_album_folder.mkdir(exist_ok=True)
+        r2_album_folder = Output_R2_Path.joinpath(album.foldername)
+        r2_album_folder.mkdir(exist_ok=True)
 
         # 渲染相册内的图片
         pics_data_list = render_album_pics(
             pics_sorted,
             local_album_folder,
             web_album_folder,
+            r2_album_folder,
             album_data,
             gallery.to_data()
         )
@@ -173,6 +182,7 @@ def render_all_albums(
         update_gallery = render_album_index_html(
             local_album_folder,
             web_album_folder,
+            r2_album_folder,
             gallery,
             album,
             album_data,
@@ -534,6 +544,7 @@ def render_index_html(
 def render_album_index_html(
         local_output_folder:Path,
         web_output_folder:Path,
+        r2_output_folder:Path,
         gallery:Gallery,
         album:Album,
         album_data:AlbumData,
@@ -552,8 +563,10 @@ def render_album_index_html(
     if force:
         local_output_path = local_output_folder.joinpath(Index_HTML)
         web_output_path = web_output_folder.joinpath(Index_HTML)
+        r2_output_path = r2_output_folder.joinpath(Index_HTML)
         local_js_output_path = local_output_folder.joinpath(Pics_Id_List_JS)
         web_js_output_path = web_output_folder.joinpath(Pics_Id_List_JS)
+        r2_js_output_path = r2_output_folder.joinpath(Pics_Id_List_JS)
         gallery_data = gallery.to_data()
         render_write("local_album_index_html", local_output_path, dict(
             gallery=gallery_data,
@@ -568,11 +581,20 @@ def render_album_index_html(
             pictures=pics_data_list,
             albums=gallery.get_albumdata(),
         ))
+        render_write("r2_album_index_html", r2_output_path, dict(
+            gallery=gallery_data,
+            album=album_data,
+            pictures=pics_data_list,
+            albums=gallery.get_albumdata(),
+        ))
         pics_id_list = [pic.file_id for pic in pics_data_list]
         render_write("pics_id_list_js", local_js_output_path, dict(
             pics=pics_id_list
         ))
         render_write("pics_id_list_js", web_js_output_path, dict(
+            pics=pics_id_list
+        ))
+        render_write("pics_id_list_js", r2_js_output_path, dict(
             pics=pics_id_list
         ))
 
@@ -583,6 +605,7 @@ def render_album_pics(
         pics_paths:list[Path],
         local_album_folder:Path,
         web_album_folder:Path,
+        r2_album_folder:Path,
         album:AlbumData,
         gallery:GalleryData,
         force=False
@@ -591,7 +614,8 @@ def render_album_pics(
     pic_data_list = []
     for pic_path in pics_paths:
         pic_data = render_pic_html(
-            pic_path, local_album_folder, web_album_folder, album, gallery, force)
+            pic_path, local_album_folder, web_album_folder, r2_album_folder,
+            album, gallery, force)
         pic_data_list.append(pic_data)
     return pic_data_list
 
@@ -600,6 +624,7 @@ def render_pic_html(
         pic_path:Path,
         local_album_folder:Path,
         web_album_folder:Path,
+        r2_album_folder:Path,
         album:AlbumData,
         gallery:GalleryData,
         force=False
@@ -618,6 +643,7 @@ def render_pic_html(
         pic_filename = f"{pic_data.file_id}{Dot_HTML}"
         local_output_path = local_album_folder.joinpath(pic_filename)
         web_output_path = web_album_folder.joinpath(pic_filename)
+        r2_output_path = r2_album_folder.joinpath(pic_filename)
         render_write("local_pic_html", local_output_path, dict(
             pic=pic_data,
             album=album,
@@ -625,6 +651,8 @@ def render_pic_html(
             parent_dir="../../"
         ))
         render_write("web_pic_html", web_output_path,
+                     dict(pic=pic_data, album=album, gallery=gallery))
+        render_write("r2_pic_html", r2_output_path,
                      dict(pic=pic_data, album=album, gallery=gallery))
 
     return pic_data

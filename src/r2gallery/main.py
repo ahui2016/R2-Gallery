@@ -27,6 +27,9 @@ def show_info(ctx):
     print(f"[Author]  {gallery.author}")
     print(f"[Albums]  {len(gallery.albums)}")
     print()
+    print("[R2 Home Page]")
+    print(gallery.r2_html_url())
+    print()
     print(f"[Image Width Max    ] {gallery.image_width_max} px")
     print(f"[Image Height Max   ] {gallery.image_height_max} px")
     print(f"[Image Size Max     ] {gallery.image_size_max} MB")
@@ -134,21 +137,31 @@ def album(ctx, name):
         ctx.exit()
 
     click.echo(ctx.get_help())
+    ctx.exit()
 
 
 @cli.command(context_settings=CONTEXT_SETTINGS)
+@click.option("all_files", "-all", is_flag=True, help="Upload pictures and assets.")
 @click.option("-pics", is_flag=True, help="Upload pictures.")
+@click.option("-assets", is_flag=True, help="Upload assets.")
 @click.pass_context
-def upload(ctx, pics):
+def upload(ctx, all_files, pics, assets):
     """Upload pictures or static files.
 
     上传图片或 HTML/CSS 等文件。
     """
     gallery = get_gallery(ctx)
 
-    if pics:
+    if all_files:
         bucket = r2.get_bucket(gallery)
         r2.upload_pics(bucket)
-        ctx.exit()
-
-    click.echo(ctx.get_help())
+        r2.upload_assets(bucket)
+    elif pics:
+        bucket = r2.get_bucket(gallery)
+        r2.upload_pics(bucket)
+    elif assets:
+        bucket = r2.get_bucket(gallery)
+        r2.upload_assets(bucket)
+    else:
+        click.echo(ctx.get_help())
+    ctx.exit()

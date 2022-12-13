@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <link rel="stylesheet" href="{{parent_dir}}theme.css" />
+    <link rel="stylesheet" href="{{parent_dir}}style.css" />
+
+    {% block scripts %}
+    {% endblock %}
+
+    {% block title %}
+    <title>{{ gallery.title }}</title>
+    {% endblock %}
+
+    {% block style %}
+    <style>
+    </style>
+    {% endblock %}
+
+  </head>
+  <body>
+    {% block header %}{% endblock %}
+    <main>{% block main %}{% endblock %}</main>
+    {% block footer %}{% endblock %}
+  </body>
+
+  {% block script %}{% endblock %}
+</html>

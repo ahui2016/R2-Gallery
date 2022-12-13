@@ -146,14 +146,15 @@ class AlbumData:
 
 @dataclass
 class Album:
-    foldername : str   # 相册文件夹名称 (只能使用半角英数, 建议尽量简短)
-    author     : str   # 作者, 留空表示跟随图库作者
-    notes      : str   # 相册简介 (纯文本格式, 第一行是相册标题)
-    story      : str   # 相册的故事 (Markdown 格式)
-    sort_by    : str   # 相册内照片排序, 可选择 SortBy 里的五种排序方式
-    pictures   : list  # 图片文件名列表
-    cover      : str   # 封面 (指定一个图片文件名)
-    checksum   : str   # sha1, 用来判断相册首页 HTML 要不要更新
+    foldername : str  # 相册文件夹名称 (只能使用半角英数, 建议尽量简短)
+    author     : str  # 作者, 留空表示跟随图库作者
+    notes      : str  # 相册简介 (纯文本格式, 第一行是相册标题)
+    story      : str  # 相册的故事 (Markdown 格式)
+    sort_by    : str  # 相册内照片排序, 可选择 SortBy 里的五种排序方式
+    pictures   : list # 图片文件名列表
+    cover      : str  # 封面 (指定一个图片文件名)
+    frontpage  : str  # 默认 Frontpage.Story
+    checksum   : str  # sha1, 用来判断相册首页 HTML 要不要更新
 
     @classmethod
     def default(cls, foldername):
@@ -165,6 +166,7 @@ class Album:
             sort_by=SortBy.CTimeDesc.name,
             pictures=[],
             cover="",
+            frontpage=Frontpage.Story.name,
             checksum="",
         )
 
@@ -175,12 +177,14 @@ class Album:
         album = Album(**data)
         album.notes = album.notes.strip()
         album.story = album.story.strip()
+        album.frontpage = album.frontpage.capitalize()
         album.sort_by = sort_by_from(album.sort_by).name
         return album
 
     def make_checksum(self):
         pictures = ''.join(self.pictures)
-        text = self.author + self.notes + self.story + self.sort_by + pictures + self.cover
+        text = self.author + self.notes + self.story + self.sort_by + pictures \
+               + self.cover + self.frontpage
         return text_checksum(text)
 
     def r2_html(self) -> str:
@@ -278,7 +282,7 @@ class Gallery:
 
     def r2_html_url(self) -> str:
         """R2 首页的完整网址"""
-        return f"{self.bucket_url}/{Index_HTML}"
+        return f"{self.bucket_url}{Index_HTML}"
 
     def to_data(self) -> GalleryData:
         title, notes, err = split_notes(self.notes)

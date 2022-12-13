@@ -17,14 +17,8 @@ Http_Proxy       = "http_proxy"
 R2_Files_JSON    = "r2_files.json"
 R2_Waiting_JSON  = "r2_waiting.json"
 
-Index_HTML             = "index.html"
-Local_Index_HTML       = "local_index.html"
-Local_Album_Index_HTML = "local_album_index.html"
-Local_Pic_HTML         = "local_pic.html"
-Pics_Id_List_JS        = "pics_id_list.js"
-Web_Index_HTML         = "web_index.html"
-Web_Album_Index_HTML   = "web_album_index.html"
-Web_Pic_HTML           = "web_pic.html"
+Index_HTML       = "index.html"
+Pics_Id_List_JS  = "pics_id_list.js"
 
 Dot_HTML = ".html"
 Dot_Toml = ".toml"
@@ -46,6 +40,7 @@ CWD                  = Path.cwd().resolve()
 Templates_Path       = CWD.joinpath(Templates)
 Output_Local_Path    = CWD.joinpath(Output_Local)
 Output_Web_Path      = CWD.joinpath(Output_Web)
+Output_R2_Path       = CWD.joinpath(Output_R2)
 Gallery_Toml_Path    = CWD.joinpath(Gallery_Toml)
 R2_Waiting_JSON_Path = CWD.joinpath(R2_Waiting_JSON)
 R2_Files_JSON_Path   = CWD.joinpath(R2_Files_JSON)

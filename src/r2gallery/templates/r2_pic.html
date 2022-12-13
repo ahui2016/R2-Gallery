@@ -1,0 +1,45 @@
+{% extends "r2_base.html" %}
+
+{% block scripts %}
+<script src="pics_id_list.js"></script>
+{% endblock %}
+
+{% block title %}
+<title>{{ pic.title }} - {{ gallery.title }}</title>
+{% endblock %}
+
+{% block main %}
+<header>
+  <h1>{{ album.name }}/{{ pic.file_id }} - {{ gallery.title }}</h1>
+</header>
+
+<p>{{ pic.notes }}</p>
+
+{{ pic.story|safe }}
+
+<p>
+  <a id="next-pic" href="">
+    <img src="{{pic.filename}}" alt="{{pic.title}}" />
+  </a>
+</p>
+
+<p>{{ pic.ctime[0:19] }}</p>
+
+{% endblock %}
+
+{% block footer %}
+<div id="footer" class="index-footer">
+  <p id="footer-body">
+    Author: {{ gallery.author }}
+    | LICENSE <a href="LICENSE.txt">CC0-1.0</a>
+  </p>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+const current_pic_id = '{{ pic.file_id }}';
+next_pic_id = pics_id_list[getNextPicIndex(current_pic_id)];
+document.querySelector('#next-pic').setAttribute('href', `${next_pic_id}.html`);
+</script>
+{% endblock %}

@@ -2,12 +2,19 @@
 
 ## TODO
 
+- 合并 html templates (local, web, r2 三合一)
 - 每个相册可单独设置展示方式: 缩略图 or 单图(index2.html)
-- r2_files.json:
-  记录已上传到 R2 的 html/css 等文件的 checksum, 以便判断是否需要更新.
-- 生成 output_r2 版本的网页 (添加文件到 r2_files.json)
+  - 生成图库/相册的 list.html
+- 优化: 减少重复读写 toml 的次数
 - PictureData.r2_pic_name, PictureData.r2_thumb_name 可能没用
 - util.pic_paths_to_pic_data() 可能没用
+
+## 2022-12-13
+
+- r2_files.json:
+  记录已上传到 R2 的 html/css 等文件的 checksum, 以便判断是否需要更新.
+- 生成 output_r2 版本的网页
+- 上传 output_r2 内的文件
 
 ## 2022-12-12
 
@@ -56,3 +63,8 @@
 ### 删除图片
 
 r2_waiting["delete"]
+
+### Frontpage
+
+- 图库/相册首页是 index.html, 该网页内容会根据 frontpage 设定而变化
+- 另外图库/相册还有一个 list.html 页面, 内容固定为相册/图片列表

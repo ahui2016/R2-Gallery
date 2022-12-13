@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 from typing import Iterable
@@ -6,7 +7,7 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError
 
-from .const import R2_Files_JSON_Path, R2_Waiting_JSON_Path, Thumbs
+from .const import R2_Files_JSON_Path, R2_Waiting_JSON_Path, Thumbs, Output_R2_Path
 
 
 def get_bucket(cfg):
@@ -75,6 +76,13 @@ def add_to_r2_files(obj_names: list[str]):
     write_r2_files_json(r2_files)
 
 
+def update_r2_files(new_r2_files:dict):
+    old_r2_files = get_r2_files()
+    for obj_name, checksum in new_r2_files.items():
+        old_r2_files[obj_name] = checksum
+    write_r2_files_json(old_r2_files)
+
+
 def upload_file(file:str, obj_name:str, bucket) -> bool:
     """返回 False 表示上传失败。"""
     success = True
@@ -97,6 +105,7 @@ def upload_pic(pic_path:str, bucket):
 
 
 def upload_pics(bucket):
+    """上传图片及其缩略图到 Cloudflare R2"""
     r2_waiting = get_r2_waiting()
     success = set()
     for pic_path in r2_waiting["upload"]:
@@ -108,3 +117,26 @@ def upload_pics(bucket):
             break
     r2_waiting["upload"] = r2_waiting["upload"].difference(success)
     write_r2_waiting(r2_waiting)
+
+
+def upload_assets(bucket):
+    """上传 HTML/CSS 等文件到 Cloudflare R2"""
+    r2_files = get_r2_files()
+    success = {}
+    for obj_name in r2_files:
+        filepath = Output_R2_Path.joinpath(obj_name)
+        checksum = file_checksum(filepath)
+        if r2_files[obj_name] == checksum:
+            continue
+
+        print(f"upload -> {filepath}")
+        if upload_file(str(filepath), obj_name, bucket):
+            success[obj_name] =checksum
+        else:
+            print(f"上传失败: {filepath}")
+    update_r2_files(success)
+
+
+def file_checksum(filepath:Path) -> str:
+    text = filepath.read_text()
+    return hashlib.sha1(text.encode()).hexdigest()
