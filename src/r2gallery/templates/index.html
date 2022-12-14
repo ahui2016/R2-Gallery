@@ -1,4 +1,4 @@
-{% extends "local_base.html" %}
+{% extends "base.html" %}
 
 {% block main %}
 <header>
@@ -12,8 +12,14 @@
 <ul>
   {% for album in albums %}
   <li>{{ album.title }}<br />
-    <a href="{{album.name}}/index.html">
-      <img src="{{parent_dir}}{{album.name}}/thumbs/{{album.cover_thumb}}" alt="{{album.cover_title}}" />
+    <a href="{{album.r2_html}}">
+      {% if output_type == "local" %}
+      <img src="{{album.cover_thumb_local}}" alt="{{album.cover_title}}" />
+      {% elif output_type == "web" %}
+      <img src="{{album.cover_thumb_web}}" alt="{{album.cover_title}}" />
+      {% else %}
+      <img src="{{album_cover_path}}" alt="{{album.cover_title}}" />
+      {% endif %}
     </a>
   </li>
   {% endfor %}

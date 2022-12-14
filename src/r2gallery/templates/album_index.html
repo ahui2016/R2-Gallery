@@ -1,4 +1,4 @@
-{% extends "r2_base.html" %}
+{% extends "base.html" %}
 
 {% block title %}
 <title>{{ album.title }} - {{ gallery.title }}</title>
@@ -17,7 +17,7 @@
   {% for pic in pictures %}
   <li>{{ pic.title }}<br />
     <a href="{{pic.file_id}}.html">
-      <img src="thumbs/{{pic.file_id}}.jpeg" alt="{{pic.title}}" />
+      <img src="{{parent_dir}}thumbs/{{pic.file_id}}.jpeg" alt="{{pic.title}}" />
     </a>
   </li>
   {% endfor %}

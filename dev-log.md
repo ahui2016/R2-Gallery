@@ -2,12 +2,15 @@
 
 ## TODO
 
-- 合并 html templates (local, web, r2 三合一)
 - 每个相册可单独设置展示方式: 缩略图 or 单图(index2.html)
   - 生成图库/相册的 list.html
 - 优化: 减少重复读写 toml 的次数
 - PictureData.r2_pic_name, PictureData.r2_thumb_name 可能没用
 - util.pic_paths_to_pic_data() 可能没用
+
+## 2022-12-14
+
+- 合并 html templates (local, web, r2 三合一)
 
 ## 2022-12-13
 

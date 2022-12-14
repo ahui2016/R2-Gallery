@@ -140,7 +140,9 @@ class AlbumData:
     story              : str  # Album.story 转换为 HTML
     sort_by            : str  # 相当于 Album.sort_by
     r2_html            : str  # 相当于 Album.r2_html
-    cover_thumb        : str  # Album.cover 的缩略图文件名
+    cover_thumb_r2     : str  # Album.cover 的缩略图文件名
+    cover_thumb_web    : str  # Album.cover 的缩略图网址
+    cover_thumb_local  : str  # Album.cover 的缩略图本地路径
     cover_title        : str  # 提取自 Album.cover 的 notes
 
 
@@ -191,13 +193,14 @@ class Album:
         """R2 HTML object name"""
         return f"{self.foldername}/{Index_HTML}"
 
-    def to_data(self, album_path:Path) -> AlbumData:
+    def to_data(self, album_path:Path, bucket_url:str) -> AlbumData:
         title, notes, err = split_notes(self.notes)
         if err:
             title = self.foldername
         toml_name = Path(self.cover).with_suffix(Dot_Toml).name
         toml_path = album_path.joinpath(Metadata, toml_name)
         cover = Picture.loads(toml_path)
+        cover_filename = cover.file_id+Dot_JPEG
         return AlbumData(
             name=self.foldername,
             author=self.author,
@@ -206,7 +209,9 @@ class Album:
             story=mistune.html(self.story),
             sort_by=self.sort_by,
             r2_html=self.r2_html(),
-            cover_thumb=cover.file_id+Dot_JPEG,
+            cover_thumb_r2=cover_filename,
+            cover_thumb_web=f"{bucket_url}{self.foldername}/thumbs/{cover_filename}",
+            cover_thumb_local=f"../{self.foldername}/thumbs/{cover_filename}",
             cover_title=cover.title(),
         )
 
@@ -325,7 +330,7 @@ class Gallery:
             album_path = CWD.joinpath(album_name)
             album_toml_path = album_path.joinpath(Album_Toml)
             album = Album.loads(album_toml_path)
-            albums.append(album.to_data(album_path))
+            albums.append(album.to_data(album_path, self.bucket_url))
         return albums
 
 
