@@ -275,6 +275,17 @@ story = '''
 填写信息后, 执行命令 `r2g render NAME` (其中 NAME 是相册文件夹名)
 或 `r2g render -all` 更新网页.
 
+### 三种输出
+
+添加图片并执行 `r2g -update` 后, 会生成网页, 分成 3 个文件夹:
+
+- **output_local**: 这是用来本地预览的, 不消耗网络浏览, 预览相册的效果
+- **output_web**: 这是一个静态网站, 可以上传到 GitHub Pages 之类的地方,
+  即可得到一个能在网络上公开访问的网站, 其中图片储存在 Cloudflare R2
+- **output_r2**: 这是等待上传到 Cloudflare R2 的网页文件,
+  如果你不想使用 GitHub Pages 之类的服务, 可以直接使用 Cloudflare R2
+  作为一个能在网络上公开访问的网站 (具体方法件后文 "上传文件" 部分).
+
 ### 图片体积上限
 
 注意, 本软件并非图片备份软件!
@@ -328,6 +339,26 @@ story = '''
 - 采用 SortBy.List 方式时, 必须填写 album.toml 中的 pictures 列表
 - 采用 SortBy.List 方式时, 只显示列表中的图片, 未列出的就不会显示
   (但图片本身仍可被公开访问, 只是不出现在相册中)
+
+## 上传文件
+
+为了节省网络流量 (同时也有利于减少网络传输时间), 本软件将生成网页与
+上传文件拆分为两个命令.
+
+建议操作步骤是:
+
+1. 先用 `r2g -update` 生成网页, 进 output_local 文件夹双击 index.html 预览效果.
+2. 执行 `r2g upload -pics` 上传图片
+   - 如果你想利用 Cloudflare R2 作为网站, 此时可以执行 `r2g upload -all` 同时上传图片与网页
+3. 进 output_web 文件夹双击 index.html 预览效果, 该网页中的图片都是 Cloudflare R2 里的图片
+4. 利用 GitHub pages 之类的服务发布 output_web 文件夹的内容
+
+### 访问 Cloudflare R2 中的相册
+
+- 如果你上传文件时执行了 `r2g upload -all`, 那你就已经获得了一个
+  可以在网络上公开访问的相册.
+- 使用命令 `r2g -info` 可以查看 R2 Home Page 网址, 这就是你的相册网址.
+- Cloudflare R2 可以自定义域名, 参考 [connect-your-bucket-to-a-custom-domain](https://developers.cloudflare.com/r2/data-access/public-buckets/#connect-your-bucket-to-a-custom-domain)
 
 ## 使用代理 (http proxy)
 
