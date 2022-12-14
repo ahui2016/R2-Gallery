@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block main %}
+<header>
+  <h1>single {{ gallery.title }}</h1>
+</header>
+
+<p>{{ gallery.notes }}</p>
+
+{{ gallery.story|safe }}
+
+<ul>
+  {% for album in albums %}
+  <li>{{ album.title }}<br />
+    <a href="{{album.r2_html}}">
+      {% if output_type == "local" %}
+      <img src="{{album.cover_thumb_local}}" alt="{{album.cover_title}}" />
+      {% elif output_type == "web" %}
+      <img src="{{album.cover_thumb_web}}" alt="{{album.cover_title}}" />
+      {% else %}
+      <img src="{{album_cover_path}}" alt="{{album.cover_title}}" />
+      {% endif %}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+
+{% endblock %}
+
+{% block footer %}
+<div id="footer" class="index-footer">
+  <p id="footer-body">
+    Author: {{ gallery.author }}
+    | LICENSE <a href="LICENSE.txt">CC0-1.0</a>
+  </p>
+</div>
+{% endblock %}

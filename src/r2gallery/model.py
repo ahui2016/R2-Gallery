@@ -189,6 +189,9 @@ class Album:
                + self.cover + self.frontpage
         return text_checksum(text)
 
+    def index_html_name(self):
+        return f"album_index_{self.frontpage.lower()}.html"
+
     def r2_html(self) -> str:
         """R2 HTML object name"""
         return f"{self.foldername}/{Index_HTML}"
@@ -323,6 +326,9 @@ class Gallery:
 
     def thumb_suffix(self):
         return f".{self.image_output_format.lower()}"
+
+    def index_html_name(self):
+        return f"index_{self.frontpage.lower()}.html"
 
     def get_albumdata(self):
         albums = []

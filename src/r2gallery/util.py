@@ -21,36 +21,41 @@ jinja_env = jinja2.Environment(
     loader=loader, autoescape=jinja2.select_autoescape()
 )
 
+# tmplfile 可能没用
 # 将templates 文件夹内除了 tmplfile 之外的全部文件都复制到 output 文件夹
-tmplfile = dict(
-    gallery_toml     = Gallery_Toml,
-    album_toml       = Album_Toml,
-    picture_toml     = Picture_Toml,
-    index_html       = "index.html",
-    album_index_html = "album_index.html",
-    pic_html         = "pic.html",
-    pics_id_list_js  = Pics_Id_List_JS,
+_tmplfile = dict(
+    gallery_toml            = Gallery_Toml,
+    album_toml              = Album_Toml,
+    picture_toml            = Picture_Toml,
+    index_list_html         = Index_List_HTML,
+    index_story_html        = "index_story.html",
+    index_single_html       = "index_single.html",
+    album_index_list_html   = Album_Index_List_HTML,
+    album_index_story_html  = "album_index_story.html",
+    album_index_single_html = "album_index_single.html",
+    pic_html                = "pic.html",
+    pics_id_list_js         = Pics_Id_List_JS,
 )
 
 
 def render_write(tmpl_name:str, output_path:Path, data:dict):
-    tmpl = jinja_env.get_template(tmplfile[tmpl_name])
+    tmpl = jinja_env.get_template(tmpl_name)
     rendered = tmpl.render(data)
     print(f"render and write {output_path}")
     output_path.write_text(rendered, encoding="utf-8")
 
 
 def render_gallery_toml(gallery:Gallery):
-    render_write('gallery_toml', Gallery_Toml_Path, dict(data=gallery))
+    render_write(Gallery_Toml, Gallery_Toml_Path, dict(data=gallery))
 
 
 def render_album_toml(album:Album):
     toml_path = CWD.joinpath(album.foldername, Album_Toml)
-    render_write('album_toml', toml_path, dict(data=album))
+    render_write(Album_Toml, toml_path, dict(data=album))
 
 
 def render_picture_toml(toml_path:Path, pic:Picture):
-    render_write('picture_toml', toml_path, dict(data=pic))
+    render_write(Picture_Toml, toml_path, dict(data=pic))
 
 
 def folder_not_empty(folder):
@@ -122,18 +127,30 @@ def create_album(name:str, gallery:Gallery):
 
 
 def render_all(albums_pics:dict, gallery:Gallery, force=False):
-    local_output_path = Output_Local_Path.joinpath(Index_HTML)
-    web_output_path = Output_Web_Path.joinpath(Index_HTML)
-    r2_output_path = Output_R2_Path.joinpath(Index_HTML)
-    update_gallery = render_all_albums(albums_pics, gallery)
+    local_output_path  = Output_Local_Path.joinpath(Index_HTML)
+    local_output_path2 = Output_Local_Path.joinpath(Index2_HTML)
+    web_output_path    = Output_Web_Path.joinpath(Index_HTML)
+    web_output_path2   = Output_Web_Path.joinpath(Index2_HTML)
+    r2_output_path     = Output_R2_Path.joinpath(Index_HTML)
+    r2_output_path2    = Output_R2_Path.joinpath(Index2_HTML)
+    update_gallery     = render_all_albums(albums_pics, gallery)
+
     if not force:
         force = update_gallery
     force = render_index_html(
-        "local", "index_html", local_output_path, gallery, force)
+        "local", gallery.index_html_name(), local_output_path, gallery, force)
+
     render_index_html(
-        "web", "index_html", web_output_path, gallery, force)
+        "web", gallery.index_html_name(), web_output_path, gallery, force)
     render_index_html(
-        "r2", "index_html", r2_output_path, gallery, force)
+        "r2", gallery.index_html_name(), r2_output_path, gallery, force)
+    render_index_html(
+        "local", Index_List_HTML, local_output_path2, gallery, force)
+    render_index_html(
+        "web", Index_List_HTML, web_output_path2, gallery, force)
+    render_index_html(
+        "r2", Index_List_HTML, r2_output_path2, gallery, force)
+
     r2.add_to_r2_files([Index_HTML])
 
 
@@ -563,40 +580,34 @@ def render_album_index_html(
         update_gallery = True
 
     if force:
-        local_output_path = local_output_folder.joinpath(Index_HTML)
-        web_output_path = web_output_folder.joinpath(Index_HTML)
-        r2_output_path = r2_output_folder.joinpath(Index_HTML)
+        local_output_path    = local_output_folder.joinpath(Index_HTML)
+        local_output_path2   = local_output_folder.joinpath(Index2_HTML)
+        web_output_path      = web_output_folder.joinpath(Index_HTML)
+        web_output_path2     = web_output_folder.joinpath(Index2_HTML)
+        r2_output_path       = r2_output_folder.joinpath(Index_HTML)
+        r2_output_path2      = r2_output_folder.joinpath(Index2_HTML)
         local_js_output_path = local_output_folder.joinpath(Pics_Id_List_JS)
-        web_js_output_path = web_output_folder.joinpath(Pics_Id_List_JS)
-        r2_js_output_path = r2_output_folder.joinpath(Pics_Id_List_JS)
-        gallery_data = gallery.to_data()
-        render_write("album_index_html", local_output_path, dict(
-            gallery=gallery_data,
-            album=album_data,
-            pictures=pics_data_list,
-            parent_dir=f"../../{album_data.name}/"
-        ))
-        render_write("album_index_html", web_output_path, dict(
-            gallery=gallery_data,
-            album=album_data,
-            pictures=pics_data_list,
-            parent_dir=f"{gallery.bucket_url}{album_data.name}/"
-        ))
-        render_write("album_index_html", r2_output_path, dict(
-            gallery=gallery_data,
-            album=album_data,
-            pictures=pics_data_list,
-        ))
+        web_js_output_path   = web_output_folder.joinpath(Pics_Id_List_JS)
+        r2_js_output_path    = r2_output_folder.joinpath(Pics_Id_List_JS)
+        gallery_data         = gallery.to_data()
+
+        data = dict(gallery=gallery_data, album=album_data, pictures=pics_data_list,)
+        render_write(album.index_html_name(), r2_output_path, data)
+        render_write(Album_Index_List_HTML, r2_output_path2, data)
+
+        data["parent_dir"]=f"../../{album_data.name}/"
+        render_write(album.index_html_name(), local_output_path, data)
+        render_write(Album_Index_List_HTML, local_output_path2, data)
+
+        data["parent_dir"]=f"{gallery.bucket_url}{album_data.name}/"
+        render_write(album.index_html_name(), web_output_path, data)
+        render_write(Album_Index_List_HTML, web_output_path2, data)
+
         pics_id_list = [pic.file_id for pic in pics_data_list]
-        render_write("pics_id_list_js", local_js_output_path, dict(
-            pics=pics_id_list
-        ))
-        render_write("pics_id_list_js", web_js_output_path, dict(
-            pics=pics_id_list
-        ))
-        render_write("pics_id_list_js", r2_js_output_path, dict(
-            pics=pics_id_list
-        ))
+        pics_id_data = dict(pics=pics_id_list)
+        render_write(Pics_Id_List_JS, local_js_output_path, pics_id_data)
+        render_write(Pics_Id_List_JS, web_js_output_path, pics_id_data)
+        render_write(Pics_Id_List_JS, r2_js_output_path, pics_id_data)
 
     return update_gallery
 
@@ -644,20 +655,13 @@ def render_pic_html(
         local_output_path = local_album_folder.joinpath(pic_filename)
         web_output_path = web_album_folder.joinpath(pic_filename)
         r2_output_path = r2_album_folder.joinpath(pic_filename)
-        render_write("pic_html", local_output_path, dict(
-            pic=pic_data,
-            album=album,
-            gallery=gallery,
-            parent_dir=f"../../{album.name}/"
-        ))
-        render_write("pic_html", web_output_path, dict(
-            pic=pic_data,
-            album=album,
-            gallery=gallery,
-            parent_dir=f"{gallery.bucket_url}{album.name}/"
-        ))
-        render_write("pic_html", r2_output_path,
-                     dict(pic=pic_data, album=album, gallery=gallery))
+
+        data = dict(pic=pic_data, album=album, gallery=gallery)
+        render_write(Pic_HTML, r2_output_path, data)
+        data["parent_dir"] = f"../../{album.name}/"
+        render_write(Pic_HTML, local_output_path, data)
+        data["parent_dir"] = f"{gallery.bucket_url}{album.name}/"
+        render_write(Pic_HTML, web_output_path, data)
 
     return pic_data
 

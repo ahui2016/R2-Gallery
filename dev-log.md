@@ -2,15 +2,15 @@
 
 ## TODO
 
-- 每个相册可单独设置展示方式: 缩略图 or 单图(index2.html)
-  - 生成图库/相册的 list.html
-- 优化: 减少重复读写 toml 的次数
+- 优化: 减少重复读写 toml 的次数 (似乎没有优化空间)
 - PictureData.r2_pic_name, PictureData.r2_thumb_name 可能没用
 - util.pic_paths_to_pic_data() 可能没用
+- tmplfile 可能没用
 
 ## 2022-12-14
 
 - 合并 html templates (local, web, r2 三合一)
+- 每个相册可单独设置展示方式: List/Single/Story
 
 ## 2022-12-13
 
@@ -71,3 +71,6 @@ r2_waiting["delete"]
 
 - 图库/相册首页是 index.html, 该网页内容会根据 frontpage 设定而变化
 - 另外图库/相册还有一个 list.html 页面, 内容固定为相册/图片列表
+- index2.html 的内容等同于 Frontpage.List
+- Frontpage.Single 生成的 index.html 提供链接到 index2.html
+- Frontpage.Story 和 Frontpage.List 不提供连接到 index2.html
