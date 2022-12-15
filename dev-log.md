@@ -6,6 +6,10 @@
 - PictureData.r2_pic_name, PictureData.r2_thumb_name 可能没用
 - util.pic_paths_to_pic_data() 可能没用
 - tmplfile 可能没用
+- 删除图片
+- 删除相册
+- 图片改文件名
+- 相册改文件夹名
 
 ## 2022-12-14
 
@@ -58,14 +62,14 @@
 - 生成缩略图
 - 添加图片文件名到 album.toml
 - 添加图片的 HTML 到 r2_files.json
-- 添加图片路径到 r2_waiting["upload"]
-- 添加缩略图路径到 r2_waiting["upload"]
-- 等执行 `r2g upload -all` 时才上传 r2_waiting["upload"]
+- 添加图片路径到 r2_waiting
+- 添加缩略图路径到 r2_waiting
+- 等执行 `r2g upload -all` 时才上传 r2_waiting
 - 执行 `r2g upload -all` 时更新 r2_files.json 里的 checksum
 
 ### 删除图片
 
-r2_waiting["delete"]
+- 先删除 R2 里的图片, 成功后再删除本地图片
 
 ### Frontpage
 

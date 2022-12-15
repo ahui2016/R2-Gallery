@@ -9,21 +9,7 @@
 
 {{ gallery.story|safe }}
 
-<ul>
-  {% for album in albums %}
-  <li>{{ album.title }}<br />
-    <a href="{{album.r2_html}}">
-      {% if output_type == "local" %}
-      <img src="{{album.cover_thumb_local}}" alt="{{album.cover_title}}" />
-      {% elif output_type == "web" %}
-      <img src="{{album.cover_thumb_web}}" alt="{{album.cover_title}}" />
-      {% else %}
-      <img src="{{album_cover_path}}" alt="{{album.cover_title}}" />
-      {% endif %}
-    </a>
-  </li>
-  {% endfor %}
-</ul>
+<p><a href="index2.html">List</a></p>
 
 {% endblock %}
 

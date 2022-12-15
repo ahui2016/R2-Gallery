@@ -200,9 +200,9 @@ class Album:
         title, notes, err = split_notes(self.notes)
         if err:
             title = self.foldername
-        toml_name = Path(self.cover).with_suffix(Dot_Toml).name
-        toml_path = album_path.joinpath(Metadata, toml_name)
-        cover = Picture.loads(toml_path)
+        cover_toml_name = Path(self.cover).with_suffix(Dot_Toml).name
+        cover_toml_path = album_path.joinpath(Metadata, cover_toml_name)
+        cover = Picture.loads(cover_toml_path)
         cover_filename = cover.file_id+Dot_JPEG
         return AlbumData(
             name=self.foldername,

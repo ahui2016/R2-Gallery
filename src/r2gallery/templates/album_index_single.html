@@ -6,22 +6,14 @@
 
 {% block main %}
 <header>
-  <h1>sigle {{ album.title }} - {{ gallery.title }}</h1>
+  <h1>single {{ album.title }} - {{ gallery.title }}</h1>
 </header>
 
 <p>{{ album.notes }}</p>
 
 {{ album.story|safe }}
 
-<ul>
-  {% for pic in pictures %}
-  <li>{{ pic.title }}<br />
-    <a href="{{pic.file_id}}.html">
-      <img src="{{parent_dir}}thumbs/{{pic.file_id}}.jpeg" alt="{{pic.title}}" />
-    </a>
-  </li>
-  {% endfor %}
-</ul>
+<p><a href="index2.html">List</a></p>
 
 {% endblock %}
 

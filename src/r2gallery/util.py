@@ -666,6 +666,45 @@ def render_pic_html(
     return pic_data
 
 
+def delete_pic(pic_path:Path, thumb_path:Path, toml_path:Path, bucket):
+    """
+    r2_waiting 是未生成 toml/缩略图/html 的新图片。
+    """
+    r2_waiting = r2.get_r2_waiting()
+    r2_files = r2.get_r2_files()
+    parts = pic_path.parts
+    pic_id = pic_path.stem.lower()
+    album_folder = parts[-2]
+    pic_obj_name = parts[-2:]
+    thumb_obj_name = thumb_path[-3:]
+    html_obj_name = f"{album_folder}/{pic_id + Dot_HTML}"
+    local_html_path = Output_Local_Path.joinpath(html_obj_name)
+    web_html_path = Output_Web_Path.joinpath(html_obj_name)
+    r2_html_path = Output_R2_Path.joinpath(html_obj_name)
+
+    objects_to_delete = set()
+    if pic_obj_name not in r2_waiting:
+        objects_to_delete.add(pic_obj_name)
+    if thumb_obj_name not in r2_waiting:
+        objects_to_delete.add(thumb_obj_name)
+    html_checksum = r2_files.get(html_obj_name, "")
+    if html_checksum:
+        objects_to_delete.add(html_obj_name)
+
+    failed = r2.delete_objects(objects_to_delete, bucket)
+    if len(failed) > 0:
+        print(f"未删除: {', '.join(failed)}")
+
+    paths_to_delete = [pic_path, thumb_path, toml_path, local_html_path,
+                       web_html_path, r2_html_path]
+    for file in paths_to_delete:
+        if file.exists():
+            print(f"Delete {file}")
+            file.unlink()
+        else:
+            print(f"File Not Exists: {file}")
+
+
 def rename_pic(name:str, pic_path:Path):
     pass
 

@@ -33,23 +33,18 @@ def get_proxies(cfg):
 
 def add_pics_to_r2_waiting(new_pics:Iterable):
     waiting = get_r2_waiting()
-    waiting["upload"] = waiting["upload"].union(new_pics)
-    write_r2_waiting(waiting)
+    write_r2_waiting(waiting.union(new_pics))
 
 
-def write_r2_waiting(waiting:dict):
-    waiting["upload"] = list(waiting["upload"])
-    waiting["delete"] = list(waiting["delete"])
-    R2_Waiting_JSON_Path.write_text(json.dumps(waiting))
+def write_r2_waiting(waiting:set):
+    R2_Waiting_JSON_Path.write_text(json.dumps(list(waiting)))
 
 
-def get_r2_waiting() -> dict:
+def get_r2_waiting() -> set:
     if R2_Waiting_JSON_Path.exists():
         waiting = json.loads(R2_Waiting_JSON_Path.read_text())
-        waiting["upload"] = set(waiting["upload"])
-        waiting["delete"] = set(waiting["delete"])
-        return waiting
-    return dict(upload=set(), delete=set())
+        return set(waiting)
+    return set()
 
 
 def write_r2_files_json(r2_files:dict):
@@ -108,14 +103,14 @@ def upload_pics(bucket):
     """上传图片及其缩略图到 Cloudflare R2"""
     r2_waiting = get_r2_waiting()
     success = set()
-    for pic_path in r2_waiting["upload"]:
+    for pic_path in r2_waiting:
         print(f"upload -> {pic_path}")
         if upload_pic(pic_path, bucket):
             success.add(pic_path)
         else:
             print(f"上传失败: {pic_path}")
             break
-    r2_waiting["upload"] = r2_waiting["upload"].difference(success)
+    r2_waiting.difference_update(success)
     write_r2_waiting(r2_waiting)
 
 
@@ -135,6 +130,16 @@ def upload_assets(bucket):
         else:
             print(f"上传失败: {filepath}")
     update_r2_files(success)
+
+
+def delete_objects(obj_names:set[str], bucket) -> set[str]:
+    """返回删除失败的 obj name"""
+    objects = [dict(Key=obj_name) for obj_name in obj_names]
+    resp = bucket.delete_objects(Delete={"Objects": objects})
+    deleted = [obj["Key"] for obj in resp["Deleted"]]
+    if len(deleted) > 0:
+        print(f"Deleted from R2: {','.join(deleted)}")
+    return obj_names.difference(deleted)
 
 
 def file_checksum(filepath:Path) -> str:
