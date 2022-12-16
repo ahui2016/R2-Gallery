@@ -61,13 +61,14 @@ def get_r2_files() -> dict:
 def add_to_r2_files(obj_names: list[str]):
     """obj_names 是 obj_name 的列表.
 
-    将待上传的 obj_name 添加到 r2_files, checksum 是空字符串。
-    注意: 待上传的 obj_name 对应的 checksum 总是空字符串,
-    只有当上传时, 才更新真实的 checksum.
+    新的 obj_name 添加到 r2_files 时, checksum 是空字符串。
+    如果 obj_name 已经在 r2_files 中, 则其 checksum 保持不变.
+    (等上传时才更新 checksum)
     """
     r2_files = get_r2_files()
     for obj_name in obj_names:
-        r2_files[obj_name] = ""
+        checksum = r2_files.get(obj_name, "")
+        r2_files[obj_name] = checksum
     write_r2_files_json(r2_files)
 
 
@@ -76,6 +77,11 @@ def update_r2_files(new_r2_files:dict):
     for obj_name, checksum in new_r2_files.items():
         old_r2_files[obj_name] = checksum
     write_r2_files_json(old_r2_files)
+
+
+def delete_from_r2_files(name:str, r2_files:dict):
+    del r2_files[name]
+    write_r2_files_json(r2_files)
 
 
 def upload_file(file:str, obj_name:str, bucket) -> bool:

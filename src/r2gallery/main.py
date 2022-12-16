@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from . import __version__, util, r2
@@ -137,6 +139,21 @@ def album(ctx, name):
         ctx.exit()
 
     click.echo(ctx.get_help())
+    ctx.exit()
+
+
+@cli.command(context_settings=CONTEXT_SETTINGS)
+@click.argument("name", type=click.Path(exists=True))
+@click.pass_context
+def delete(ctx, name):
+    """Delete a picture or an album.
+
+    删除一张图片或一个相册。
+    """
+    click.confirm("注意, 删除文件不可恢复, 确认执行吗?", abort=True)
+    gallery = get_gallery(ctx)
+    bucket = r2.get_bucket(gallery)
+    util.delete_pic_or_album(Path(name), bucket)
     ctx.exit()
 
 

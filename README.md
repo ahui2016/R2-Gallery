@@ -360,6 +360,14 @@ story = '''
 - 使用命令 `r2g -info` 可以查看 R2 Home Page 网址, 这就是你的相册网址.
 - Cloudflare R2 可以自定义域名, 参考 [connect-your-bucket-to-a-custom-domain](https://developers.cloudflare.com/r2/data-access/public-buckets/#connect-your-bucket-to-a-custom-domain)
 
+## 删除图片或相册
+
+- 使用命令 `r2g delete NAME` 删除图片或相册
+- 例如 `r2g delete ./abcd/pic.jpg` 删除相册 abcd 中文件名为 pic.jpg 的图片
+- 例如 `r2g delete ./abcd` 删除文件夹名为 abcd 的相册
+- 删除一张或多张图片后, 还要执行 `r2g -update` 才会更新 HTML 文件
+- 注意, 删除图片不可恢复, 请小心操作.
+
 ## 使用代理 (http proxy)
 
 - 默认不使用代理.

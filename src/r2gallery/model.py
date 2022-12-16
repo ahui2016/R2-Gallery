@@ -183,6 +183,15 @@ class Album:
         album.sort_by = sort_by_from(album.sort_by).name
         return album
 
+    def delete_pic(self, pic_name:str):
+        if pic_name in self.pictures:
+            self.pictures.remove(pic_name)
+        if pic_name == self.cover:
+            if len(self.pictures) > 0:
+                self.cover = self.pictures[0]
+            else:
+                self.cover = ""
+
     def make_checksum(self):
         pictures = ''.join(self.pictures)
         text = self.author + self.notes + self.story + self.sort_by + pictures \

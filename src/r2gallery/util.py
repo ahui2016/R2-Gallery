@@ -666,6 +666,30 @@ def render_pic_html(
     return pic_data
 
 
+def delete_pic_or_album(filepath:Path, bucket):
+    if filepath.is_file():
+        if filepath.suffix == Dot_Toml:
+            print(f"不是图片: {filepath}")
+            return
+        if not is_pic_in_album(filepath):
+            print(f"不在相册内: {filepath}")
+            return
+        pic_id = filepath.stem.lower()
+        thumb_path = filepath.parent.joinpath(Thumbs, pic_id+Dot_JPEG)
+        toml_path = filepath.parent.joinpath(Metadata, pic_id+Dot_Toml)
+        delete_pic(filepath, thumb_path, toml_path, bucket)
+        album_toml_path = filepath.parent.joinpath(Album_Toml)
+        album = Album.loads(album_toml_path)
+        album.delete_pic(filepath.name)
+        render_album_toml(album)
+    else:
+        delete_album()
+
+
+def delete_album():
+    pass
+
+
 def delete_pic(pic_path:Path, thumb_path:Path, toml_path:Path, bucket):
     """
     r2_waiting 是未生成 toml/缩略图/html 的新图片。
@@ -673,10 +697,10 @@ def delete_pic(pic_path:Path, thumb_path:Path, toml_path:Path, bucket):
     r2_waiting = r2.get_r2_waiting()
     r2_files = r2.get_r2_files()
     parts = pic_path.parts
-    pic_id = pic_path.stem.lower()
+    pic_id = toml_path.stem
     album_folder = parts[-2]
-    pic_obj_name = parts[-2:]
-    thumb_obj_name = thumb_path[-3:]
+    pic_obj_name = "/".join(parts[-2:])
+    thumb_obj_name = "/".join(thumb_path.parts[-3:])
     html_obj_name = f"{album_folder}/{pic_id + Dot_HTML}"
     local_html_path = Output_Local_Path.joinpath(html_obj_name)
     web_html_path = Output_Web_Path.joinpath(html_obj_name)
@@ -690,10 +714,11 @@ def delete_pic(pic_path:Path, thumb_path:Path, toml_path:Path, bucket):
     html_checksum = r2_files.get(html_obj_name, "")
     if html_checksum:
         objects_to_delete.add(html_obj_name)
+        r2.delete_from_r2_files(html_obj_name, r2_files)
 
     failed = r2.delete_objects(objects_to_delete, bucket)
     if len(failed) > 0:
-        print(f"未删除: {', '.join(failed)}")
+        print(f"未删除云端文件: {', '.join(failed)}")
 
     paths_to_delete = [pic_path, thumb_path, toml_path, local_html_path,
                        web_html_path, r2_html_path]
@@ -703,6 +728,13 @@ def delete_pic(pic_path:Path, thumb_path:Path, toml_path:Path, bucket):
             file.unlink()
         else:
             print(f"File Not Exists: {file}")
+
+
+def is_pic_in_album(pic_path:Path) -> bool:
+    """返回 False 表示该图片文件不在相册中"""
+    album_folder = pic_path.parts[-2]
+    my_pic_path = CWD.joinpath(album_folder, pic_path.name)
+    return my_pic_path.samefile(pic_path)
 
 
 def rename_pic(name:str, pic_path:Path):
