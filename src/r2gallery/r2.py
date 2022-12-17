@@ -92,6 +92,16 @@ def delete_album_from_r2_files(album_folder:str, r2_files:dict[str, str]):
     write_r2_files_json(remains)
 
 
+def rename_obj(old_name:str, new_name:str, bucket):
+    print(f"Rename Cloudflare R2 object '{old_name}' to '{new_name}'")
+    copy_source = {
+        "Bucket": bucket.name,
+        "Key": old_name
+    }
+    bucket.copy(copy_source, new_name)
+    bucket.delete_objects(Delete={"Objects": [dict(Key=old_name)]})
+
+
 def upload_file(file:str, obj_name:str, bucket) -> bool:
     """返回 False 表示上传失败。"""
     success = True
