@@ -339,6 +339,10 @@ class Gallery:
     def index_html_name(self):
         return f"index_{self.frontpage.lower()}.html"
 
+    def delete_album(self, album_folder:str):
+        if album_folder in self.albums:
+            self.albums.remove(album_folder)
+
     def get_albumdata(self):
         albums = []
         for album_name in self.albums:

@@ -153,7 +153,7 @@ def delete(ctx, name):
     click.confirm("注意, 删除文件不可恢复, 确认执行吗?", abort=True)
     gallery = get_gallery(ctx)
     bucket = r2.get_bucket(gallery)
-    util.delete_pic_or_album(Path(name), bucket)
+    util.delete_pic_or_album(Path(name), gallery, bucket)
     ctx.exit()
 
 

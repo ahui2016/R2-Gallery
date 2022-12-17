@@ -666,13 +666,13 @@ def render_pic_html(
     return pic_data
 
 
-def delete_pic_or_album(filepath:Path, bucket):
+def delete_pic_or_album(filepath:Path, gallery:Gallery, bucket):
     if filepath.is_file():
-        if filepath.suffix == Dot_Toml:
-            print(f"不是图片: {filepath}")
-            return
         if not is_pic_in_album(filepath):
             print(f"不在相册内: {filepath}")
+            return
+        if filepath.suffix == Dot_Toml:
+            print(f"不是图片: {filepath}")
             return
         pic_id = filepath.stem.lower()
         thumb_path = filepath.parent.joinpath(Thumbs, pic_id+Dot_JPEG)
@@ -683,11 +683,26 @@ def delete_pic_or_album(filepath:Path, bucket):
         album.delete_pic(filepath.name)
         render_album_toml(album)
     else:
-        delete_album()
+        if not is_album_in_gallery(filepath):
+            print(f"不在图库内: {filepath}")
+            return
+        if filepath.name in Not_Album_Folders:
+            print(f"不是相册: {filepath}")
+            return
+        delete_album(filepath, gallery, bucket)
 
 
-def delete_album():
-    pass
+def delete_album(album_path:Path, gallery:Gallery, bucket):
+    r2.delete_album(album_path.name, bucket)
+    output_local_path = Output_Local_Path.joinpath(album_path.name)
+    output_web_path = Output_Web_Path.joinpath(album_path.name)
+    output_r2_path = Output_R2_Path.joinpath(album_path.name)
+    for folder in [album_path, output_local_path, output_web_path, output_r2_path]:
+        if folder.exists():
+            print(f"Delete {folder}")
+            shutil.rmtree(folder)
+    gallery.delete_album(album_path.name)
+    render_gallery_toml(gallery)
 
 
 def delete_pic(pic_path:Path, thumb_path:Path, toml_path:Path, bucket):
@@ -716,9 +731,7 @@ def delete_pic(pic_path:Path, thumb_path:Path, toml_path:Path, bucket):
         objects_to_delete.add(html_obj_name)
         r2.delete_from_r2_files(html_obj_name, r2_files)
 
-    failed = r2.delete_objects(objects_to_delete, bucket)
-    if len(failed) > 0:
-        print(f"未删除云端文件: {', '.join(failed)}")
+    r2.delete_objects(objects_to_delete, bucket)
 
     paths_to_delete = [pic_path, thumb_path, toml_path, local_html_path,
                        web_html_path, r2_html_path]
@@ -735,6 +748,12 @@ def is_pic_in_album(pic_path:Path) -> bool:
     album_folder = pic_path.parts[-2]
     my_pic_path = CWD.joinpath(album_folder, pic_path.name)
     return my_pic_path.samefile(pic_path)
+
+
+def is_album_in_gallery(album_path:Path) -> bool:
+    """返回 False 表示该相册文件夹不在图库内"""
+    my_album_path = CWD.joinpath(album_path.name)
+    return my_album_path.samefile(album_path)
 
 
 def rename_pic(name:str, pic_path:Path):

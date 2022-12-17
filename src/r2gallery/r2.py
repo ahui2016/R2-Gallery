@@ -84,6 +84,14 @@ def delete_from_r2_files(name:str, r2_files:dict):
     write_r2_files_json(r2_files)
 
 
+def delete_album_from_r2_files(album_folder:str, r2_files:dict[str, str]):
+    remains = dict()
+    for obj_name in r2_files.keys():
+        if album_folder != obj_name.split("/")[0]:
+            remains[obj_name] = r2_files[obj_name]
+    write_r2_files_json(remains)
+
+
 def upload_file(file:str, obj_name:str, bucket) -> bool:
     """返回 False 表示上传失败。"""
     success = True
@@ -138,16 +146,38 @@ def upload_assets(bucket):
     update_r2_files(success)
 
 
-def delete_objects(obj_names:set[str], bucket) -> set[str]:
+def delete_objects(obj_names:set[str], bucket):
     """返回删除失败的 obj name"""
     objects = [dict(Key=obj_name) for obj_name in obj_names]
     resp = bucket.delete_objects(Delete={"Objects": objects})
     deleted = [obj["Key"] for obj in resp["Deleted"]]
+    print_delete_result(obj_names, deleted)
+
+
+def delete_album(album_folder:str, bucket):
+    objects = get_objects_by_prefix(album_folder, bucket)
+    obj_list = [dict(Key=obj.key) for obj in objects]
+    if obj_list:
+        resp = bucket.delete_objects(Delete={"Objects": obj_list})
+        deleted = [obj["Key"] for obj in resp["Deleted"]]
+        obj_names = [obj.key for obj in objects]
+        print_delete_result(set(obj_names), deleted)
+    delete_album_from_r2_files(album_folder, get_r2_files())
+
+
+def print_delete_result(obj_names:set, deleted:list):
     if len(deleted) > 0:
-        print(f"Deleted from R2: {','.join(deleted)}")
-    return obj_names.difference(deleted)
+        print(f"Deleted from R2: {', '.join(deleted)}")
+    failed = obj_names.difference(deleted)
+    if len(failed) > 0:
+        print(f"未删除云端文件: {', '.join(failed)}")
 
 
 def file_checksum(filepath:Path) -> str:
     text = filepath.read_text()
     return hashlib.sha1(text.encode()).hexdigest()
+
+
+def get_objects_by_prefix(prefix, bucket):
+    return bucket.objects.filter(Prefix=prefix)
+

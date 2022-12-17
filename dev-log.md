@@ -6,9 +6,12 @@
 - PictureData.r2_pic_name, PictureData.r2_thumb_name 可能没用
 - util.pic_paths_to_pic_data() 可能没用
 - tmplfile 可能没用
-- 删除相册
 - 图片改文件名
 - 相册改文件夹名
+
+## 2022-12-17
+
+- 删除相册
 
 ## 2022-12-16
 
