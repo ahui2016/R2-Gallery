@@ -60,7 +60,7 @@ def now():
 @dataclass
 class PictureData:
     """用于生成前端 HTML"""
-    file_id       : str  # 相当于 Picture.file_id
+    file_id       : str  # 文件名作为 id (不含后缀名, 转小写)
     filename      : str  # 图片文件名, 包括后缀, 不包括文件夹
     title         : str  # 提取自 Picture.notes 的第一行
     notes         : str  # 提取自 Picture.notes (不含第一行)
@@ -73,7 +73,6 @@ class PictureData:
 
 @dataclass
 class Picture:
-    file_id  : str  # 文件名作为 id (不含后缀名, 转小写)
     notes    : str  # 简单描述 (纯文本格式, 第一行是图片标题)
     story    : str  # 图片的故事 (Markdown 格式)
     ctime    : str  # 拍摄或创作或发布日期
@@ -85,7 +84,6 @@ class Picture:
             ctime = now()
         file_id = file.stem.lower()
         return Picture(
-            file_id=file_id,
             notes=file_id,
             story="",
             ctime=ctime,
@@ -110,23 +108,22 @@ class Picture:
         pic_title, _, _ = split_notes(self.notes)
         return pic_title
 
-    def r2_html(self, album_folder:str) -> str:
-        """R2 HTML object name"""
-        return f"{album_folder}/{self.file_id}{Dot_HTML}"
-
-    def to_data(self, album_folder:str, pic_name:str) -> PictureData:
+    def to_data(self, pic_path:Path) -> PictureData:
         """pic_name 是图片文件名, 包括后缀, 不包括文件夹."""
         title, notes, _ = split_notes(self.notes)
+        file_id = pic_path.stem.lower()
+        pic_name = pic_path.name
+        album_folder = pic_path.parent.name
         return PictureData(
-            file_id=self.file_id,
+            file_id=file_id,
             filename=pic_name,
             title=title,
             notes=notes,
             story=mistune.html(self.story),
             ctime=self.ctime,
-            r2_html=self.r2_html(album_folder),
+            r2_html=f"{album_folder}/{file_id+Dot_HTML}",
             r2_pic_name=f"{album_folder}/{pic_name}",
-            r2_thumb_name=f"{album_folder}/{Thumbs}/{self.file_id}{Dot_JPEG}",
+            r2_thumb_name=f"{album_folder}/{Thumbs}/{file_id+Dot_JPEG}",
         )
 
 
@@ -192,6 +189,13 @@ class Album:
             else:
                 self.cover = ""
 
+    def rename_pic(self, old_name:str, new_name:str):
+        if old_name in self.pictures:
+            i = self.pictures.index(old_name)
+            self.pictures[i] = new_name
+        if old_name == self.cover:
+            self.cover = new_name
+
     def make_checksum(self):
         pictures = ''.join(self.pictures)
         text = self.author + self.notes + self.story + self.sort_by + pictures \
@@ -211,8 +215,8 @@ class Album:
             title = self.foldername
         cover_toml_name = Path(self.cover).with_suffix(Dot_Toml).name
         cover_toml_path = album_path.joinpath(Metadata, cover_toml_name)
+        cover_thumb_name = cover_toml_path.with_suffix(Dot_JPEG).name
         cover = Picture.loads(cover_toml_path)
-        cover_filename = cover.file_id+Dot_JPEG
         return AlbumData(
             name=self.foldername,
             author=self.author,
@@ -221,9 +225,9 @@ class Album:
             story=mistune.html(self.story),
             sort_by=self.sort_by,
             r2_html=self.r2_html(),
-            cover_thumb_r2=cover_filename,
-            cover_thumb_web=f"{bucket_url}{self.foldername}/thumbs/{cover_filename}",
-            cover_thumb_local=f"../{self.foldername}/thumbs/{cover_filename}",
+            cover_thumb_r2=cover_thumb_name,
+            cover_thumb_web=f"{bucket_url}{self.foldername}/thumbs/{cover_thumb_name}",
+            cover_thumb_local=f"../{self.foldername}/thumbs/{cover_thumb_name}",
             cover_title=cover.title(),
         )
 

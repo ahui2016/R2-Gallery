@@ -153,7 +153,41 @@ def delete(ctx, name):
     click.confirm("注意, 删除文件不可恢复, 确认执行吗?", abort=True)
     gallery = get_gallery(ctx)
     bucket = r2.get_bucket(gallery)
-    util.delete_pic_or_album(Path(name), gallery, bucket)
+    util.delete_pic_or_album(Path(name).resolve(), gallery, bucket)
+    ctx.exit()
+
+
+@cli.command(context_settings=CONTEXT_SETTINGS)
+@click.option(
+    "-pic",
+    type=click.Path(exists=True),
+    help="The picture to rename."
+)
+@click.option(
+    "-album",
+    type=click.Path(exists=True),
+    help="The album to rename."
+)
+@click.option(
+    "--new-name",
+    required=True,
+    help="The new name."
+)
+@click.pass_context
+def rename(ctx, pic, album, new_name):
+    """Rename a picture or an album.
+
+    重命名一张图片的文件名 或 一个相册的文件夹名。
+    """
+    if not pic and not album:
+        print("Error: Missing option '-pic' or '-album'.")
+        ctx.exit()
+    gallery = get_gallery(ctx)
+    bucket = r2.get_bucket(gallery)
+
+    if pic:
+        util.rename_pic(Path(pic).resolve(), new_name, gallery, bucket)
+
     ctx.exit()
 
 

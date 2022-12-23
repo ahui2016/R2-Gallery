@@ -302,11 +302,11 @@ def print_bad_names(albums:dict, err:str):
             print(f"{album_name}/{pic_name}")
 
 
-def pic_paths_to_pic_data(album_folder:str, pic_paths:list[Path]) -> list[PictureData]:
+def pic_paths_to_pic_data(pic_paths:list[Path]) -> list[PictureData]:
     pic_data_list = []
     for pic_path in pic_paths:
         toml_path = get_pic_toml_path(pic_path)
-        pic_data = Picture.loads(toml_path).to_data(album_folder, pic_path.name)
+        pic_data = Picture.loads(toml_path).to_data(pic_path)
         pic_data_list.append(pic_data)
     return pic_data_list
 
@@ -643,7 +643,7 @@ def render_pic_html(
     """返回 PictureData 有用."""
     pic_toml_path = get_pic_toml_path(pic_path)
     pic = Picture.loads(pic_toml_path)
-    pic_data = pic.to_data(album.name, pic_path.name)
+    pic_data = pic.to_data(pic_path)
     checksum = pic.make_checksum()
     if pic.checksum != checksum:
         pic.checksum = checksum
@@ -651,10 +651,10 @@ def render_pic_html(
         force = True
 
     if force:
-        pic_filename = f"{pic_data.file_id}{Dot_HTML}"
-        local_output_path = local_album_folder.joinpath(pic_filename)
-        web_output_path = web_album_folder.joinpath(pic_filename)
-        r2_output_path = r2_album_folder.joinpath(pic_filename)
+        pic_html_name = f"{pic_data.file_id}{Dot_HTML}"
+        local_output_path = local_album_folder.joinpath(pic_html_name)
+        web_output_path = web_album_folder.joinpath(pic_html_name)
+        r2_output_path = r2_album_folder.joinpath(pic_html_name)
 
         data = dict(pic=pic_data, album=album, gallery=gallery)
         render_write(Pic_HTML, r2_output_path, data)
@@ -666,13 +666,33 @@ def render_pic_html(
     return pic_data
 
 
+def rename_pic(filepath:Path, new_name:str, gallery:Gallery, bucket):
+    if not filepath.is_file():
+        print(f"不是文件: {filepath}")
+        return
+    if err := check_pic_in_album(filepath):
+        print(err)
+        return
+
+    if filepath.with_name(new_name).suffix == "":
+        new_name = new_name + filepath.suffix
+
+    album_toml_path = filepath.parent.joinpath(Album_Toml)
+    album = Album.loads(album_toml_path)
+    album.rename_pic(filepath.name, new_name)
+    render_album_toml(album)
+
+    pic_id = filepath.stem.lower()
+    thumb_path = filepath.parent.joinpath(Thumbs, pic_id+Dot_JPEG)
+    toml_path = filepath.parent.joinpath(Metadata, pic_id+Dot_Toml)
+    rename_pic_inner(
+        filepath, thumb_path, toml_path, new_name, gallery, bucket)
+
+
 def delete_pic_or_album(filepath:Path, gallery:Gallery, bucket):
     if filepath.is_file():
-        if not is_pic_in_album(filepath):
-            print(f"不在相册内: {filepath}")
-            return
-        if filepath.suffix == Dot_Toml:
-            print(f"不是图片: {filepath}")
+        if err := check_pic_in_album(filepath):
+            print(err)
             return
         pic_id = filepath.stem.lower()
         thumb_path = filepath.parent.joinpath(Thumbs, pic_id+Dot_JPEG)
@@ -706,9 +726,6 @@ def delete_album(album_path:Path, gallery:Gallery, bucket):
 
 
 def delete_pic(pic_path:Path, thumb_path:Path, toml_path:Path, bucket):
-    """
-    r2_waiting 是未生成 toml/缩略图/html 的新图片。
-    """
     r2_waiting = r2.get_r2_waiting()
     r2_files = r2.get_r2_files()
     parts = pic_path.parts
@@ -722,12 +739,11 @@ def delete_pic(pic_path:Path, thumb_path:Path, toml_path:Path, bucket):
     r2_html_path = Output_R2_Path.joinpath(html_obj_name)
 
     objects_to_delete = set()
-    if pic_obj_name not in r2_waiting:
+    if str(pic_path) not in r2_waiting:
         objects_to_delete.add(pic_obj_name)
-    if thumb_obj_name not in r2_waiting:
+    if str(thumb_path) not in r2_waiting:
         objects_to_delete.add(thumb_obj_name)
-    html_checksum = r2_files.get(html_obj_name, "")
-    if html_checksum:
+    if r2_files.get(html_obj_name, ""):
         objects_to_delete.add(html_obj_name)
         r2.delete_from_r2_files(html_obj_name, r2_files)
 
@@ -743,6 +759,103 @@ def delete_pic(pic_path:Path, thumb_path:Path, toml_path:Path, bucket):
             print(f"File Not Exists: {file}")
 
 
+def rename_pic_inner(
+        pic_path:Path,
+        thumb_path:Path,
+        toml_path:Path,
+        new_name:str,
+        gallery:Gallery,
+        bucket
+):
+    if err := model.check_filename(new_name):
+        print(err)
+        return
+    pic_new_path = pic_path.with_name(new_name)
+    if pic_new_path.exists():
+        print(f"已存在: {pic_new_path}")
+        return
+
+    pic_new_id = pic_new_path.stem.lower()
+    thumb_new_path = thumb_path.with_stem(pic_new_id)
+    toml_new_path = toml_path.with_stem(pic_new_id)
+
+    r2_waiting = r2.get_r2_waiting()
+    r2_files = r2.get_r2_files()
+    parts = pic_path.parts
+    pic_id = toml_path.stem
+    album_folder = parts[-2]
+    pic_obj_name = "/".join(parts[-2:])
+    pic_obj_new_name = "/".join(pic_new_path.parts[-2:])
+    thumb_obj_name = "/".join(thumb_path.parts[-3:])
+    thumb_obj_new_name = "/".join(thumb_new_path.parts[-3:])
+    html_obj_name = f"{album_folder}/{pic_id + Dot_HTML}"
+    html_obj_new_name = f"{album_folder}/{pic_new_id + Dot_HTML}"
+    local_html_path = Output_Local_Path.joinpath(html_obj_name)
+    local_html_new_path = Output_Local_Path.joinpath(html_obj_new_name)
+    web_html_path = Output_Web_Path.joinpath(html_obj_name)
+    web_html_new_path = Output_Web_Path.joinpath(html_obj_new_name)
+    r2_html_path = Output_R2_Path.joinpath(html_obj_name)
+    r2_html_new_path = Output_R2_Path.joinpath(html_obj_new_name)
+
+    if str(pic_path) in r2_waiting:
+        r2_waiting.remove(str(pic_path))
+        r2_waiting.add(str(pic_new_path))
+    else:
+        r2.rename_obj(pic_obj_name, pic_obj_new_name, bucket)
+
+    if str(thumb_path) in r2_waiting:
+        r2_waiting.remove(str(thumb_path))
+        r2_waiting.add(str(thumb_new_path))
+    else:
+        r2.rename_obj(thumb_obj_name, thumb_obj_new_name, bucket)
+
+    r2.write_r2_waiting(r2_waiting)
+
+    if r2_files.get(html_obj_name, ""):
+        r2.rename_obj(html_obj_name, html_obj_new_name, bucket)
+    if html_obj_name in r2_files:
+        r2.rename_in_r2_files(html_obj_name, html_obj_new_name, r2_files)
+
+    pairs_to_rename = [
+        (pic_path, pic_new_path),
+        (thumb_path, thumb_new_path),
+        (toml_path, toml_new_path),
+    ]
+    for old_path, new_path in pairs_to_rename:
+        if old_path.exists():
+            print(f"Rename {old_path} to {new_path.name}")
+            old_path.rename(new_path)
+        else:
+            print(f"File Not Exists: {old_path}")
+
+    if local_html_path.exists():
+        local_html_path.unlink(missing_ok=True)
+        web_html_path.unlink(missing_ok=True)
+        r2_html_path.unlink(missing_ok=True)
+
+        album_toml_path = pic_path.parent.joinpath(Album_Toml)
+        album_data = Album.loads(album_toml_path).to_data(
+            pic_path.parent, gallery.bucket_url)
+
+        render_pic_html(
+            pic_new_path,
+            local_html_new_path.parent,
+            web_html_new_path.parent,
+            r2_html_new_path.parent,
+            album_data,
+            gallery.to_data(),
+            force=True
+        )
+
+
+def check_pic_in_album(filepath:Path) -> str:
+    if not is_pic_in_album(filepath):
+        return f"不在相册内: {filepath}"
+    if filepath.suffix == Dot_Toml:
+        return f"不是图片: {filepath}"
+    return ""
+
+
 def is_pic_in_album(pic_path:Path) -> bool:
     """返回 False 表示该图片文件不在相册中"""
     album_folder = pic_path.parts[-2]
@@ -754,10 +867,6 @@ def is_album_in_gallery(album_path:Path) -> bool:
     """返回 False 表示该相册文件夹不在图库内"""
     my_album_path = CWD.joinpath(album_path.name)
     return my_album_path.samefile(album_path)
-
-
-def rename_pic(name:str, pic_path:Path):
-    pass
 
 
 def set_use_proxy(sw:str, gallery:Gallery):

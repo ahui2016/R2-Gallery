@@ -41,6 +41,7 @@ def write_r2_waiting(waiting:set):
 
 
 def get_r2_waiting() -> set:
+    """:return: set(pic_path:str)"""
     if R2_Waiting_JSON_Path.exists():
         waiting = json.loads(R2_Waiting_JSON_Path.read_text())
         return set(waiting)
@@ -77,6 +78,13 @@ def update_r2_files(new_r2_files:dict):
     for obj_name, checksum in new_r2_files.items():
         old_r2_files[obj_name] = checksum
     write_r2_files_json(old_r2_files)
+
+
+def rename_in_r2_files(old_name:str, new_name:str, r2_files:dict):
+    checksum = r2_files[old_name]
+    r2_files[new_name] = checksum
+    del r2_files[old_name]
+    write_r2_files_json(r2_files)
 
 
 def delete_from_r2_files(name:str, r2_files:dict):
