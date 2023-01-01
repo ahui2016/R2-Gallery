@@ -62,9 +62,13 @@ def show_info(ctx):
     is_flag=True,
     help="Force resize all oversize pictures."
 )
+@click.option(
+    "--new-album",
+    help="Create a new album."
+)
 @click.option("--use-proxy", help="Set '1' or 'on' or 'true' to use proxy.")
 @click.pass_context
-def cli(ctx, info, update, force_resize, use_proxy):
+def cli(ctx, info, update, force_resize, new_album, use_proxy):
     """R2-Gallery: 个人独立相册，采用 Cloudflare R2 作为图片储存。
 
     https://github.com/ahui2016/R2-Gallery/
@@ -101,6 +105,12 @@ def cli(ctx, info, update, force_resize, use_proxy):
         util.resize_all_albums_pics(albums_pics, gallery)
         ctx.exit()
 
+    if new_album:
+        gallery = get_gallery(ctx)
+        err = util.create_album(new_album, gallery)
+        print_err(err)
+        ctx.exit()
+
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit()
@@ -120,25 +130,6 @@ def init_command(ctx):
     """
     err = util.init_gallery()
     print_err(err)
-    ctx.exit()
-
-
-@cli.command(context_settings=CONTEXT_SETTINGS)
-@click.option("name", "-new", help="Create a new album.")
-@click.pass_context
-def album(ctx, name):
-    """Operations about albums.
-
-    关于相册的操作。
-    """
-    gallery = get_gallery(ctx)
-
-    if name:
-        err = util.create_album(name, gallery)
-        print_err(err)
-        ctx.exit()
-
-    click.echo(ctx.get_help())
     ctx.exit()
 
 
