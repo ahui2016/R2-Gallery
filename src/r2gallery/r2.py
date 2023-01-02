@@ -87,6 +87,23 @@ def rename_in_r2_files(old_name:str, new_name:str, r2_files:dict):
     write_r2_files_json(r2_files)
 
 
+def rename_album_in_r2_files(old_name:str, new_name:str, r2_files:dict):
+    """:return: 返回需要云端改名的旧-新对象名字典."""
+    renamed = dict()
+    r2_old_new = dict()
+    for obj_name in r2_files.keys():
+        if obj_name.startswith(old_name+"/"):
+            i = obj_name.find("/")
+            obj_new_name = f"{new_name}{obj_name[i:]}"
+            renamed[obj_new_name] = r2_files[obj_name]
+            if r2_files.get(obj_name, ""):
+                r2_old_new[obj_name] = obj_new_name
+        else:
+            renamed[obj_name] = r2_files[obj_name]
+    write_r2_files_json(renamed)
+    return r2_old_new
+
+
 def delete_from_r2_files(name:str, r2_files:dict):
     del r2_files[name]
     write_r2_files_json(r2_files)
@@ -95,7 +112,7 @@ def delete_from_r2_files(name:str, r2_files:dict):
 def delete_album_from_r2_files(album_folder:str, r2_files:dict[str, str]):
     remains = dict()
     for obj_name in r2_files.keys():
-        if album_folder != obj_name.split("/")[0]:
+        if not obj_name.startswith(album_folder+"/"):
             remains[obj_name] = r2_files[obj_name]
     write_r2_files_json(remains)
 

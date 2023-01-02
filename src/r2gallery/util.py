@@ -666,6 +666,79 @@ def render_pic_html(
     return pic_data
 
 
+def rename_album(folder_path:Path, new_name:str, gallery:Gallery, bucket):
+    if not folder_path.is_dir():
+        print(f"不是文件夹: {folder_path}")
+        return
+    if err := check_album_in_gallery(folder_path):
+        print(err)
+        return
+    if err := model.check_filename(new_name):
+        print(err)
+        return
+    album_new_path = folder_path.with_name(new_name)
+    if album_new_path.exists():
+        print(f"已存在: {album_new_path}")
+        return
+
+    gallery.rename_album(folder_path.name, new_name)
+    render_gallery_toml(gallery)
+
+    r2_files = r2.get_r2_files()
+    r2_old_new = r2.rename_album_in_r2_files(folder_path.name, new_name, r2_files)
+    for old_name in r2_old_new.keys():
+        r2.rename_obj(old_name, r2_old_new[old_name], bucket)
+
+
+def rename_album_pic(album_path:Path, album_new_name:str, bucket):
+    """因相册文件夹改名而更改相册内的图片的云端对象名"""
+    album_name = album_path.name
+    album_new_path = album_path.with_name(album_new_name)
+    pic_paths = get_pic_files(album_path)
+    r2_waiting = r2.get_r2_waiting()
+    for pic_path in pic_paths:
+        pic_name = pic_path.name
+        pic_new_path = album_new_path.joinpath(pic_name)
+        pic_obj_name = f"{album_name}/{pic_name}"
+        pic_obj_new_name = f"{album_new_name}/{pic_name}"
+        pic_id = pic_path.stem.lower()
+        thumb_name = pic_id + Dot_Toml
+        thumb_path = album_path.joinpath(Metadata, thumb_name)
+        thumb_new_path = album_new_path.joinpath(Metadata, thumb_name)
+        thumb_obj_name = f"{album_name}/{Metadata}/{thumb_name}"
+        thumb_obj_new_name = f"{album_new_name}/{Metadata}/{thumb_name}"
+        rename_pic_and_thumb(
+            str(pic_path), str(pic_new_path), pic_obj_name, pic_obj_new_name,
+            str(thumb_path), str(thumb_new_path), thumb_obj_name, thumb_obj_new_name,
+            r2_waiting, bucket)
+    r2.write_r2_waiting(r2_waiting)
+
+
+def rename_pic_and_thumb(
+        pic_path_str:str,
+        pic_new_path_str:str,
+        pic_obj_name:str,
+        pic_obj_new_name:str,
+        thumb_path_str:str,
+        thumb_new_path_str:str,
+        thumb_obj_name:str,
+        thumb_obj_new_name:str,
+        r2_waiting,
+        bucket,
+):
+    if pic_path_str in r2_waiting:
+        r2_waiting.remove(pic_path_str)
+        r2_waiting.add(pic_new_path_str)
+    else:
+        r2.rename_obj(pic_obj_name, pic_obj_new_name, bucket)
+
+    if thumb_path_str in r2_waiting:
+        r2_waiting.remove(thumb_path_str)
+        r2_waiting.add(thumb_new_path_str)
+    else:
+        r2.rename_obj(thumb_obj_name, thumb_obj_new_name, bucket)
+
+
 def rename_pic(filepath:Path, new_name:str, gallery:Gallery, bucket):
     if not filepath.is_file():
         print(f"不是文件: {filepath}")
@@ -676,6 +749,14 @@ def rename_pic(filepath:Path, new_name:str, gallery:Gallery, bucket):
 
     if filepath.with_name(new_name).suffix == "":
         new_name = new_name + filepath.suffix
+
+    if err := model.check_filename(new_name):
+        print(err)
+        return
+    pic_new_path = filepath.with_name(new_name)
+    if pic_new_path.exists():
+        print(f"已存在: {pic_new_path}")
+        return
 
     album_toml_path = filepath.parent.joinpath(Album_Toml)
     album = Album.loads(album_toml_path)
@@ -767,14 +848,7 @@ def rename_pic_inner(
         gallery:Gallery,
         bucket
 ):
-    if err := model.check_filename(new_name):
-        print(err)
-        return
     pic_new_path = pic_path.with_name(new_name)
-    if pic_new_path.exists():
-        print(f"已存在: {pic_new_path}")
-        return
-
     pic_new_id = pic_new_path.stem.lower()
     thumb_new_path = thumb_path.with_stem(pic_new_id)
     toml_new_path = toml_path.with_stem(pic_new_id)
@@ -797,17 +871,10 @@ def rename_pic_inner(
     r2_html_path = Output_R2_Path.joinpath(html_obj_name)
     r2_html_new_path = Output_R2_Path.joinpath(html_obj_new_name)
 
-    if str(pic_path) in r2_waiting:
-        r2_waiting.remove(str(pic_path))
-        r2_waiting.add(str(pic_new_path))
-    else:
-        r2.rename_obj(pic_obj_name, pic_obj_new_name, bucket)
-
-    if str(thumb_path) in r2_waiting:
-        r2_waiting.remove(str(thumb_path))
-        r2_waiting.add(str(thumb_new_path))
-    else:
-        r2.rename_obj(thumb_obj_name, thumb_obj_new_name, bucket)
+    rename_pic_and_thumb(
+        str(pic_path), str(pic_new_path), pic_obj_name, pic_obj_new_name,
+        str(thumb_path), str(thumb_new_path), thumb_obj_name, thumb_obj_new_name,
+        r2_waiting, bucket)
 
     r2.write_r2_waiting(r2_waiting)
 
@@ -853,6 +920,14 @@ def check_pic_in_album(filepath:Path) -> str:
         return f"不在相册内: {filepath}"
     if filepath.suffix == Dot_Toml:
         return f"不是图片: {filepath}"
+    return ""
+
+
+def check_album_in_gallery(album_path:Path) -> str:
+    if not is_album_in_gallery(album_path):
+        return f"不在当前图库内: {album_path}"
+    if album_path.name in [Output_Local, Output_Web, Output_R2, Templates]:
+        return f"不是相册: {album_path}"
     return ""
 
 

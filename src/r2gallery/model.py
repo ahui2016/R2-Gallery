@@ -130,13 +130,13 @@ class Picture:
 @dataclass
 class AlbumData:
     """用于生成前端 HTML"""
-    name               : str  # 相当于 Album.foldername
+    name               : str  # 相册文件夹名称 (只能使用半角英数, 建议尽量简短)
     author             : str  # 相当于 Album.author
     title              : str  # 提取自 Album.notes 的第一行
     notes              : str  # 提取自 Album.notes (不含第一行)
     story              : str  # Album.story 转换为 HTML
     sort_by            : str  # 相当于 Album.sort_by
-    r2_html            : str  # 相当于 Album.r2_html
+    r2_html            : str  # R2 HTML object name
     cover_thumb_r2     : str  # Album.cover 的缩略图文件名
     cover_thumb_web    : str  # Album.cover 的缩略图网址
     cover_thumb_local  : str  # Album.cover 的缩略图本地路径
@@ -145,7 +145,6 @@ class AlbumData:
 
 @dataclass
 class Album:
-    foldername : str  # 相册文件夹名称 (只能使用半角英数, 建议尽量简短)
     author     : str  # 作者, 留空表示跟随图库作者
     notes      : str  # 相册简介 (纯文本格式, 第一行是相册标题)
     story      : str  # 相册的故事 (Markdown 格式)
@@ -158,7 +157,6 @@ class Album:
     @classmethod
     def default(cls, foldername):
         return Album(
-            foldername=foldername,
             author="",
             notes=foldername,
             story="",
@@ -205,29 +203,26 @@ class Album:
     def index_html_name(self):
         return f"album_index_{self.frontpage.lower()}.html"
 
-    def r2_html(self) -> str:
-        """R2 HTML object name"""
-        return f"{self.foldername}/{Index_HTML}"
-
     def to_data(self, album_path:Path, bucket_url:str) -> AlbumData:
+        foldername = album_path.name
         title, notes, err = split_notes(self.notes)
         if err:
-            title = self.foldername
+            title = foldername
         cover_toml_name = Path(self.cover).with_suffix(Dot_Toml).name
         cover_toml_path = album_path.joinpath(Metadata, cover_toml_name)
         cover_thumb_name = cover_toml_path.with_suffix(Dot_JPEG).name
         cover = Picture.loads(cover_toml_path)
         return AlbumData(
-            name=self.foldername,
+            name=foldername,
             author=self.author,
             title=title,
             notes=notes,
             story=mistune.html(self.story),
             sort_by=self.sort_by,
-            r2_html=self.r2_html(),
+            r2_html=f"{foldername}/{Index_HTML}",
             cover_thumb_r2=cover_thumb_name,
-            cover_thumb_web=f"{bucket_url}{self.foldername}/thumbs/{cover_thumb_name}",
-            cover_thumb_local=f"../{self.foldername}/thumbs/{cover_thumb_name}",
+            cover_thumb_web=f"{bucket_url}{foldername}/thumbs/{cover_thumb_name}",
+            cover_thumb_local=f"../{foldername}/thumbs/{cover_thumb_name}",
             cover_title=cover.title(),
         )
 
@@ -332,6 +327,11 @@ class Gallery:
 
     def add_album(self, album_name:str):
         self.albums.insert(0, album_name)
+
+    def rename_album(self, old_name:str, new_name:str):
+        if old_name in self.albums:
+            i = self.albums.index(old_name)
+            self.albums[i] = new_name
 
     def thumbnail_size(self):
         """用于 PIL.Image.thumbnail(size)"""
