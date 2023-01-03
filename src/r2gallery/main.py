@@ -149,41 +149,6 @@ def delete(ctx, name):
 
 
 @cli.command(context_settings=CONTEXT_SETTINGS)
-@click.option(
-    "-pic",
-    type=click.Path(exists=True),
-    help="The picture to rename."
-)
-@click.option(
-    "-album",
-    type=click.Path(exists=True),
-    help="The album to rename."
-)
-@click.option(
-    "--new-name",
-    required=True,
-    help="The new name."
-)
-@click.pass_context
-def rename(ctx, pic, album, new_name):
-    """Rename a picture or an album.
-
-    重命名一张图片的文件名 或 一个相册的文件夹名。
-    """
-    if not pic and not album:
-        print("Error: Missing option '-pic' or '-album'.")
-        ctx.exit()
-    gallery = get_gallery(ctx)
-    bucket = r2.get_bucket(gallery)
-
-    if pic:
-        util.rename_pic(Path(pic).resolve(), new_name, gallery, bucket)
-    elif album:
-        util.rename_album(Path(album).resolve(), new_name, gallery, bucket)
-    ctx.exit()
-
-
-@cli.command(context_settings=CONTEXT_SETTINGS)
 @click.option("all_files", "-all", is_flag=True, help="Upload pictures and assets.")
 @click.option("-pics", is_flag=True, help="Upload pictures.")
 @click.option("-assets", is_flag=True, help="Upload assets.")

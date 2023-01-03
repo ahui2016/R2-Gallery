@@ -187,13 +187,6 @@ class Album:
             else:
                 self.cover = ""
 
-    def rename_pic(self, old_name:str, new_name:str):
-        if old_name in self.pictures:
-            i = self.pictures.index(old_name)
-            self.pictures[i] = new_name
-        if old_name == self.cover:
-            self.cover = new_name
-
     def make_checksum(self):
         pictures = ''.join(self.pictures)
         text = self.author + self.notes + self.story + self.sort_by + pictures \
@@ -331,11 +324,6 @@ class Gallery:
 
     def add_album(self, album_name:str):
         self.albums.insert(0, album_name)
-
-    def rename_album(self, old_name:str, new_name:str):
-        if old_name in self.albums:
-            i = self.albums.index(old_name)
-            self.albums[i] = new_name
 
     def thumbnail_size(self):
         """用于 PIL.Image.thumbnail(size)"""
