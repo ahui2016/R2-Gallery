@@ -49,8 +49,8 @@ def render_gallery_toml(gallery:Gallery):
     render_write(Gallery_Toml, Gallery_Toml_Path, dict(data=gallery))
 
 
-def render_album_toml(album:Album):
-    toml_path = CWD.joinpath(album.foldername, Album_Toml)
+def render_album_toml(album:Album, name:str):
+    toml_path = CWD.joinpath(name, Album_Toml)
     render_write(Album_Toml, toml_path, dict(data=album))
 
 
@@ -118,7 +118,7 @@ def create_album(name:str, gallery:Gallery):
     thumbs_path.mkdir()
     metadata_path.mkdir()
     album = Album.default(name)
-    render_album_toml(album)
+    render_album_toml(album, name)
     gallery.add_album(name)
     render_gallery_toml(gallery)
     print("相册创建成功。")
@@ -127,19 +127,23 @@ def create_album(name:str, gallery:Gallery):
 
 
 def render_all(albums_pics:dict, gallery:Gallery, force=False):
+    update_gallery = render_all_albums(albums_pics, gallery, force)
+    if not force:
+        force = update_gallery
+    render_gallery_index(gallery, force)
+    r2.add_to_r2_files([Index_HTML])
+
+
+def render_gallery_index(gallery:Gallery, force:bool):
     local_output_path  = Output_Local_Path.joinpath(Index_HTML)
     local_output_path2 = Output_Local_Path.joinpath(Index2_HTML)
     web_output_path    = Output_Web_Path.joinpath(Index_HTML)
     web_output_path2   = Output_Web_Path.joinpath(Index2_HTML)
     r2_output_path     = Output_R2_Path.joinpath(Index_HTML)
     r2_output_path2    = Output_R2_Path.joinpath(Index2_HTML)
-    update_gallery     = render_all_albums(albums_pics, gallery)
 
-    if not force:
-        force = update_gallery
     force = render_index_html(
         "local", gallery.index_html_name(), local_output_path, gallery, force)
-
     render_index_html(
         "web", gallery.index_html_name(), web_output_path, gallery, force)
     render_index_html(
@@ -150,8 +154,6 @@ def render_all(albums_pics:dict, gallery:Gallery, force=False):
         "web", Index_List_HTML, web_output_path2, gallery, force)
     render_index_html(
         "r2", Index_List_HTML, r2_output_path2, gallery, force)
-
-    r2.add_to_r2_files([Index_HTML])
 
 
 def update_all_albums(albums_pics:dict, gallery:Gallery):
@@ -175,11 +177,11 @@ def render_all_albums(
         album_data = album.to_data(album_path, gallery.bucket_url)
         pics_sorted = sort_pics(pics, album, album_path)
 
-        local_album_folder = Output_Local_Path.joinpath(album.foldername)
+        local_album_folder = Output_Local_Path.joinpath(album_data.name)
         local_album_folder.mkdir(exist_ok=True)
-        web_album_folder = Output_Web_Path.joinpath(album.foldername)
+        web_album_folder = Output_Web_Path.joinpath(album_data.name)
         web_album_folder.mkdir(exist_ok=True)
-        r2_album_folder = Output_R2_Path.joinpath(album.foldername)
+        r2_album_folder = Output_R2_Path.joinpath(album_data.name)
         r2_album_folder.mkdir(exist_ok=True)
 
         # 渲染相册内的图片
@@ -206,7 +208,7 @@ def render_all_albums(
 
         # 添加待上传的文件 到 r2_files.json
         obj_names = [pic.r2_html for pic in pics_data_list]
-        pics_js_name = f"{album.foldername}/{Pics_Id_List_JS}"
+        pics_js_name = f"{album_data.name}/{Pics_Id_List_JS}"
         obj_names.extend([album_data.r2_html, pics_js_name])
         r2.add_to_r2_files(obj_names)
 
@@ -244,17 +246,19 @@ def resize_all_albums_pics(albums_pics:dict, gallery:Gallery):
 def check_all_albums_cover(albums_pics:dict):
     """:return: err:str | None"""
     for album_folder, pics in albums_pics.items():
-        album = Album.loads(Path(album_folder).joinpath(Album_Toml))
+        album_path = Path(album_folder)
+        album_name = album_path.name
+        album = Album.loads(album_path.joinpath(Album_Toml))
         if not album.cover:
-            return f"每个相册都必须指定封面, 请向相册 {album.foldername} 添加图片。" \
+            return f"每个相册都必须指定封面, 请向相册 {album_name} 添加图片。" \
                    f"添加图片后执行 'r2g -update' 会自动指定封面。" \
-                   f"若想手动指定封面, 可修改 '{album.foldername}/album.toml' 中的 cover 项目。"
+                   f"若想手动指定封面, 可修改 '{album_name}/album.toml' 中的 cover 项目。"
 
         pics_name_list = [pic.name for pic in pics]
         if album.cover not in pics_name_list:
             return f"找不到封面图片: {album.cover}\n" \
-                   f"请修改 '{album.foldername}/album.toml' 中的 cover, " \
-                   f"确保 cover 指定的图片存在于相册文件夹 {album.foldername} 内。"
+                   f"请修改 '{album_name}/album.toml' 中的 cover, " \
+                   f"确保 cover 指定的图片存在于相册文件夹 {album_name} 内。"
     return None
 
 
@@ -373,7 +377,7 @@ def update_album_pictures(new_pics:list[str], album_path:Path):
     album.pictures = new_pics + album.pictures
     if not album.cover:
         album.cover = new_pics[0]
-    render_album_toml(album)
+    render_album_toml(album, album_path.name)
 
 
 def get_double_names(pics:list) -> list[str]:
@@ -575,7 +579,7 @@ def render_album_index_html(
     checksum = album.make_checksum()
     if album.checksum != checksum:
         album.checksum = checksum
-        render_album_toml(album)
+        render_album_toml(album, album_data.name)
         force = True
         update_gallery = True
 
@@ -681,13 +685,15 @@ def rename_album(folder_path:Path, new_name:str, gallery:Gallery, bucket):
         print(f"已存在: {album_new_path}")
         return
 
-    gallery.rename_album(folder_path.name, new_name)
-    render_gallery_toml(gallery)
-
     r2_files = r2.get_r2_files()
     r2_old_new = r2.rename_album_in_r2_files(folder_path.name, new_name, r2_files)
     for old_name in r2_old_new.keys():
         r2.rename_obj(old_name, r2_old_new[old_name], bucket)
+
+    folder_path.rename(album_new_path)
+    gallery.rename_album(folder_path.name, new_name)
+    render_gallery_toml(gallery)
+    render_gallery_index(gallery, force=True)
 
 
 def rename_album_pic(album_path:Path, album_new_name:str, bucket):
@@ -761,7 +767,7 @@ def rename_pic(filepath:Path, new_name:str, gallery:Gallery, bucket):
     album_toml_path = filepath.parent.joinpath(Album_Toml)
     album = Album.loads(album_toml_path)
     album.rename_pic(filepath.name, new_name)
-    render_album_toml(album)
+    render_album_toml(album, filepath.name)
 
     pic_id = filepath.stem.lower()
     thumb_path = filepath.parent.joinpath(Thumbs, pic_id+Dot_JPEG)
@@ -782,7 +788,7 @@ def delete_pic_or_album(filepath:Path, gallery:Gallery, bucket):
         album_toml_path = filepath.parent.joinpath(Album_Toml)
         album = Album.loads(album_toml_path)
         album.delete_pic(filepath.name)
-        render_album_toml(album)
+        render_album_toml(album, filepath.name)
     else:
         if not is_album_in_gallery(filepath):
             print(f"不在图库内: {filepath}")

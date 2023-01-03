@@ -178,7 +178,8 @@ def rename(ctx, pic, album, new_name):
 
     if pic:
         util.rename_pic(Path(pic).resolve(), new_name, gallery, bucket)
-
+    elif album:
+        util.rename_album(Path(album).resolve(), new_name, gallery, bucket)
     ctx.exit()
 
 

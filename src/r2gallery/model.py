@@ -208,10 +208,14 @@ class Album:
         title, notes, err = split_notes(self.notes)
         if err:
             title = foldername
-        cover_toml_name = Path(self.cover).with_suffix(Dot_Toml).name
-        cover_toml_path = album_path.joinpath(Metadata, cover_toml_name)
-        cover_thumb_name = cover_toml_path.with_suffix(Dot_JPEG).name
-        cover = Picture.loads(cover_toml_path)
+        if not self.cover:
+            cover_thumb_name = ""
+            cover_title = ""
+        else:
+            cover_toml_name = Path(self.cover).with_suffix(Dot_Toml).name
+            cover_toml_path = album_path.joinpath(Metadata, cover_toml_name)
+            cover_thumb_name = cover_toml_path.with_suffix(Dot_JPEG).name
+            cover_title = Picture.loads(cover_toml_path).title()
         return AlbumData(
             name=foldername,
             author=self.author,
@@ -220,10 +224,10 @@ class Album:
             story=mistune.html(self.story),
             sort_by=self.sort_by,
             r2_html=f"{foldername}/{Index_HTML}",
-            cover_thumb_r2=cover_thumb_name,
+            cover_thumb_r2=f"{foldername}/thumbs/{cover_thumb_name}",
             cover_thumb_web=f"{bucket_url}{foldername}/thumbs/{cover_thumb_name}",
             cover_thumb_local=f"../{foldername}/thumbs/{cover_thumb_name}",
-            cover_title=cover.title(),
+            cover_title=cover_title,
         )
 
 
